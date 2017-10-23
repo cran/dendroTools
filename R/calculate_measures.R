@@ -32,7 +32,7 @@
 #' @examples
 #' data(example_dataset_1)
 #' test_data <- example_dataset_1[1:30, ]
-#' train_data <- example_dataset_1[31:79, ]
+#' train_data <- example_dataset_1[31:55, ]
 #' lin_mod <- lm(MVA ~., data = train_data)
 #' train_predicted <- predict(lin_mod, train_data)
 #' test_predicted <- predict(lin_mod, test_data)
@@ -42,7 +42,7 @@
 #' test_observed)
 #'
 #' test_data <- example_dataset_1[1:20, ]
-#' train_data <- example_dataset_1[21:79, ]
+#' train_data <- example_dataset_1[21:55, ]
 #' library(brnn)
 #' lin_mod <- brnn(MVA ~., data = train_data)
 #' train_predicted <- predict(lin_mod, train_data)
@@ -95,5 +95,5 @@ calculate_measures <- function(train_predicted, test_predicted,
   colnames(test_measures) <- c("cor", "RMSE", "RRSE", "d", "RE", "CE", "bias")
 
   measures <- round(rbind(train_measures, test_measures),  4)
-  print(measures)
+  measures
 }

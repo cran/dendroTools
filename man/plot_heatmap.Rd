@@ -19,16 +19,23 @@ by \code{\link{daily_response}} function.
 }
 \examples{
 \dontrun{
-data(daily_temperatures_example)
+data(LJ_daily_temperatures)
 data(example_proxies_1)
 Example1 <- daily_response(response = example_proxies_1,
-env_data = daily_temperatures_example, method = "lm", measure = "r.squared",
+env_data = LJ_daily_temperatures, method = "lm", measure = "r.squared",
 fixed_width = 90, previous_year = TRUE)
 plot_heatmap(Example1)
 
 Example2 <- daily_response(response = example_proxies_1,
-env_data = daily_temperatures_example, method = "lm",
+env_data = LJ_daily_temperatures, method = "brnn",
 measure = "adj.r.squared", lower_limit = 50, upper_limit = 55)
 plot_heatmap(Example2)
+
+library(dplyr)
+oxygen_isotope <- dplyr::select(example_proxies_1, O18)
+Example3 <- daily_response(response = oxygen_isotope,
+env_data = LJ_daily_temperatures, method = "cor", lower_limit = 50,
+upper_limit = 55, previous_year = TRUE)
+plot_heatmap(Example3)
 }
 }

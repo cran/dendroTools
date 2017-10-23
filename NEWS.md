@@ -1,11 +1,12 @@
-# dendroTools 0.0.3.
+# dendroTools 0.0.4.
 
-* Package was previously called dendroExtra, but authors decided to rename it and submit it as a new package
+* Fifth element is given to the compare_methods() output list. This is a data frame with the final values of parameters used by different regression methods. 
+* New function is added: round_df(). This function rounds all numeric columns in a data frame. 
+* Datasets are updated
+* the method description as part of the title is added to the plot_extreme(), plot_specific() and plot_heatmap()
+* iter function was joined with the compare_methods()
+* random forests model was previously based on RWeka package. From 0.0.4 version on, randomForest package is used to fit random forest models
+* Package version is changed to 0.0.4
+* For the compare_methods(), new parameter is introduced: use_caret (boolean). The parameter is used for model tunning by caret package. 
+* Progress bar is given to compare_methods() and daily_response()
 
-* Changes in comparison to the package dendroExtra 0.0.2
-* new dataset is added that is used to test new function compare_methods()
-* two new functions are added: compare_methods() and calculate_measures()
-* required packages were added to the Description: dcv (>= 0.1.1), MLmetrics (>= 1.1.1), RWeka (>= 0.4-34),
-        dplyr (>= 0.7.0), reshape (>= 0.8.6)
-* the brnn option from the daily_response() was removed. We recived some comments that this function does not converge in some examples,
-so we decided to remove it. Consequently, also smooth_matrix() was removed since it is not needed anymore. 

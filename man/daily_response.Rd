@@ -6,8 +6,8 @@
 \usage{
 daily_response(response, env_data, method = "lm", measure = "r.squared",
   lower_limit = 30, upper_limit = 270, fixed_width = 0,
-  previous_year = FALSE, remove_insignificant = TRUE, alpha = 0.05,
-  row_names_subset = FALSE)
+  previous_year = FALSE, neurons = 1, brnn_smooth = TRUE,
+  remove_insignificant = TRUE, alpha = 0.05, row_names_subset = FALSE)
 }
 \arguments{
 \item{response}{a data frame with tree-ring proxy variables as columns and
@@ -20,7 +20,7 @@ each column represents a day of a year. Row.names should be matched with
 those from a response data frame. If not, set row_names_subset = TRUE.}
 
 \item{method}{a string specifying which method to use. Current possibilities
-are "cor" and "lm".}
+are "cor", "lm" and "brnn".}
 
 \item{measure}{a string specifying which measure to use. Current
 possibilities are "r.squared" and "adj.r.squared". If method = "cor",
@@ -37,9 +37,16 @@ assigned a value, upper_limit and lower_limit will be ignored}
 rearranged in a way, that also previous year will be used for calculations of
 selected statistical measure.}
 
+\item{neurons}{positive integer that indicates the number of neurons used
+for brnn method}
+
+\item{brnn_smooth}{if set to TRUE, a smoothing algorithm is applied that
+removes unrealistic calculations which are a result of neural net failure.}
+
 \item{remove_insignificant}{if set to TRUE, removes all correlations bellow
-the significant threshold level, based on a selected alpha. For "lm" method,
-squared threshold is used, which corresponds to R squared statistics.}
+the significant threshold level, based on a selected alpha. For "lm" and
+"brnn" method, squared threshold is used, which corresponds to R squared
+statistics.}
 
 \item{alpha}{significance level used to remove insignificant calculations.}
 
@@ -54,6 +61,8 @@ a list with four elements:
   3. measure is a string indicating a calculated measure
   4. optimized_result is aggregated daily data, that returned the best
   calculated measure
+  5. String specifying the analysed period based on the information from
+  row names. If there is no row names, this argument is given as NA.
 }
 \description{
 Function calculates all possible values of a selected statistical measure
@@ -68,37 +77,73 @@ in the matrix is indicating a window width (row names) and a location in a
 matrix of daily sequences of environmental data (column names).
 }
 \examples{
-data(daily_temperatures_example)
+\dontrun{
+data(LJ_daily_temperatures)
 data(example_proxies_1)
 library(dplyr)
-oxygen_isotope <- select(example_proxies_1, O)
-carbon_isotope <- select(example_proxies_1, C)
+oxygen_isotope <- dplyr::select(example_proxies_1, O18)
+MVA_parameter <- dplyr::select(example_proxies_1, MVA)
 
-\dontrun{
-Example1a <- daily_response(response = carbon_isotope,
-env_data = daily_temperatures_example, method = "lm", measure = "r.squared",
-lower_limit = 357, upper_limit = 358)
+Example1a <- daily_response(response = MVA_parameter,
+env_data = LJ_daily_temperatures, method = "lm", measure = "r.squared",
+lower_limit = 357, upper_limit = 358, row_names_subset = TRUE)
 
-Example1b <- daily_response(response = oxygen_isotope,
-env_data = daily_temperatures_example, method = "lm", measure = "adj.r.squared",
-lower_limit = 350, upper_limit = 351, remove_insignificant = TRUE)
+Example1b <- daily_response(response = MVA_parameter,
+env_data = LJ_daily_temperatures, method = "cor", measure = "adj.r.squared",
+lower_limit = 100, upper_limit = 200, remove_insignificant = TRUE,
+row_names_subset = TRUE)
+plot_heatmap(Example1b)
 
-Example1c <- daily_response(response = carbon_isotope,
-env_data = daily_temperatures_example, method = "lm", measure = "r.squared",
-lower_limit = 100, upper_limit = 104)
+Example1c <- daily_response(response = example_proxies_1,
+env_data = LJ_daily_temperatures, method = "lm", measure = "adj.r.squared",
+lower_limit = 25, upper_limit = 35, row_names_subset = TRUE)
 
-Example2 <- daily_response(response = example_proxies_1,
-env_data = daily_temperatures_example, method = "cor",
-measure = "ad.j.r.squared", fixed_width = 120)
+Example2a <- daily_response(response = MVA_parameter,
+env_data = LJ_daily_temperatures, method = "lm",
+measure = "adj.r.squared", fixed_width = 10, row_names_subset = TRUE)
 
-Example3 <- daily_response(response = oxygen_isotope,
-env_data = daily_temperatures_example, method = "lm", lower_limit = 100,
-upper_limit = 150, remove_insignificant = TRUE)
+Example2b <- daily_response(response = MVA_parameter,
+env_data = LJ_daily_temperatures, method = "lm", lower_limit = 50,
+upper_limit = 70, remove_insignificant = TRUE, row_names_subset = TRUE,
+previous_year = TRUE)
+plot_heatmap(Example2b)
+plot_extreme(Example2b)
+plot_specific(Example2b, 60)
 
 # Example with negative correlations. Data frames are automatically subset.
 data(example_proxies_2)
-Example4 <- daily_response(response = example_proxies_2,
-env_data = daily_temperatures_example, method = "cor",
+Example3 <- daily_response(response = example_proxies_2,
+env_data = LJ_daily_temperatures, method = "brnn",
+lower_limit = 30, upper_limit = 40, row_names_subset = TRUE)
+
+# brnn examples
+Example4a <- daily_response(response = MVA_parameter,
+env_data = LJ_daily_temperatures, method = "brnn", measure = "r.squared",
+lower_limit = 357, upper_limit = 358, row_names_subset = TRUE)
+
+Example4b <- daily_response(response = MVA_parameter,
+env_data = LJ_daily_temperatures, method = "brnn", measure = "adj.r.squared",
+lower_limit = 100, upper_limit = 200, remove_insignificant = TRUE,
+row_names_subset = TRUE)
+plot_heatmap(Example4b)
+
+Example4c <- daily_response(response = example_proxies_1,
+env_data = LJ_daily_temperatures, method = "brnn", measure = "adj.r.squared",
+lower_limit = 25, upper_limit = 35, row_names_subset = TRUE)
+
+Example5a <- daily_response(response = MVA_parameter,
+env_data = LJ_daily_temperatures, method = "brnn",
+measure = "adj.r.squared", fixed_width = 30, row_names_subset = TRUE)
+
+Example5b <- daily_response(response = MVA_parameter,
+env_data = LJ_daily_temperatures, method = "brnn", lower_limit = 100,
+upper_limit = 150, remove_insignificant = TRUE, row_names_subset = TRUE)
+plot_heatmap(Example5b)
+
+# Example with negative correlations. Data frames are automatically subset.
+data(example_proxies_2)
+Example6 <- daily_response(response = example_proxies_2,
+env_data = LJ_daily_temperatures, method = "brnn",
 lower_limit = 30, upper_limit = 40, row_names_subset = TRUE)
 }
 }

@@ -4,10 +4,11 @@
 \alias{compare_methods}
 \title{compare_methods}
 \usage{
-compare_methods(formula, dataset, k = 3, repeats = 2, neurons = 1,
-  MT_M = 4, MT_N = F, MT_U = F, MT_R = F, BMT_P = 100, BMT_I = 100,
-  BMT_M = 4, BMT_N = F, BMT_U = F, BMT_R = F, RF_P = 100,
-  RF_I = 100, RF_depth = 0, multiply = 5)
+compare_methods(formula, dataset, k = 3, repeats = 2, use_caret = TRUE,
+  ANN_neurons = 1, MT_M = 4, MT_N = F, MT_U = F, MT_R = F,
+  BMT_P = 100, BMT_I = 100, BMT_M = 4, BMT_N = F, BMT_U = F,
+  BMT_R = F, RF_mtry = 0, RF_maxnodes = 4, RF_ntree = 200,
+  multiply = 5, returns = c("Calibration", "Validation"), digits = 3)
 }
 \arguments{
 \item{formula}{an object of class "formula" (or one that can be coerced
@@ -21,7 +22,10 @@ columns and (optional) years as row names.}
 \item{repeats}{number of cross-validation repeats. Should be equal or more
 than 2.}
 
-\item{neurons}{positive integer that indicates the number of neurons used
+\item{use_caret}{if set to TRUE, the package caret will be used to tune parameters
+for regression methods}
+
+\item{ANN_neurons}{positive integer that indicates the number of neurons used
 for brnn method}
 
 \item{MT_M}{minimum number of instances used by model trees}
@@ -44,21 +48,34 @@ for brnn method}
 
 \item{BMT_R}{use regression trees (argument for bagging of model trees)}
 
-\item{RF_P}{bagSizePercent (argument for random forest)}
+\item{RF_mtry}{Number of variables randomly sampled as candidates at each
+split (argument for random forest)}
 
-\item{RF_I}{number of iterations (argument for random forest)}
+\item{RF_maxnodes}{Maximum number of terminal nodes trees in the forest can
+have (argument for random forest)}
 
-\item{RF_depth}{maxDepth (argument for random forest)}
+\item{RF_ntree}{Number of trees to grow (argument for random forest)}
 
 \item{multiply}{an intiger that will be used to change the seed options
 for different repeats. set.seed(multiply*5)}
+
+\item{returns}{A character vector that specifies, whether a calibration and/ or
+validation results should be returned.}
+
+\item{digits}{intiger of number of digits to be displayed in the final
+result tables}
 }
 \value{
-a list with two elements. Element one is a data frame with
+a list with five elements. Element one is a data frame with
 calculated measures for five regression methods. For each regression method
-and each calculated measure, mean and standard deviation are given, together
-with rank and share of rank 1.
-Element two is a ggplot object of bias for validation data.
+and each calculated measure, mean and standard deviation are given.
+Element two is similar to element one: a data frame with ranks of calculated
+measures: average rank and share of rank 1 are given. Element three and four
+are ggplot objects of mean bias for calibration (element 3) and validation
+(element 4) data. If returns argument is set to return only "Calibration" or
+"Validation" results, only the three relevant elements will be returned in the
+list. Element five is a data frame with specifications of parameters used for
+different regression methods.
 }
 \description{
 Calculates performance measures for train and test data of different
@@ -76,20 +93,32 @@ data(example_dataset_1)
 
 # An example with default settings of machine learning algorithms
 experiment_1 <- compare_methods(formula = MVA~.,
-dataset = example_dataset_1, k = 3, repeats = 2)
-experiment_1[[1]] # See a data frame results
-experiment_1[[2]] # See a ggplot of mean bias for validation data
+dataset = example_dataset_1, k = 10, repeats = 2,
+returns = c("Calibration", "Validation"))
+experiment_1[[1]] # See a data frame results of mean and standard deviation
+# for different methods
+experiment_1[[2]] # See a data frame results of average rank and share of
+# rank 1 for different methods
+experiment_1[[3]] # See a ggplot of mean bias for calibration data
+experiment_1[[4]] # See a ggplot of mean bias for validation data
+experiment_1[[5]] # Data frame with parameters used for regression methods
 
-experiment_2 <- compare_methods(formula = MVA~.,
-dataset = example_dataset_1, k = 3, repeats = 2, neurons = 1,
+experiment_2 <- compare_methods(formula = MVA ~ .,
+dataset = example_dataset_1, k = 5, repeats = 100, ANN_neurons = 1,
 MT_M = 4, MT_N = FALSE, MT_U = FALSE, MT_R = FALSE, BMT_P = 100,
 BMT_I = 100, BMT_M = 4, BMT_N = FALSE, BMT_U = FALSE, BMT_R = FALSE,
-RF_P = 100, RF_I = 100, RF_depth= 0, multiply = 5)
-experiment_2[[1]] # See a data frame results
-experiment_2[[2]] # See a ggplot of mean bias for validation data
+RF_mtry = 0, RF_maxnodes = 4, RF_ntree = 200, multiply = 5,
+returns = c("Calibration"))
+experiment_2[[1]]
+experiment_2[[2]]
+experiment_2[[3]]
 
-experiment_4 <- compare_methods(formula = MVA~.,
-dataset = example_dataset_1, k = 2, repeats = 2)
+experiment_3 <- compare_methods(formula = MVA~.,
+dataset = example_dataset_1, k = 5, repeats = 10,
+use_caret = TRUE, returns = c("Validation"))
+experiment_3[[1]]
+experiment_3[[2]]
+experiment_3[[3]]
 }
 }
 \references{

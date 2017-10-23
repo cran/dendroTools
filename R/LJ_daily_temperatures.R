@@ -375,4 +375,4 @@
 #' }
 #' @source \url{http://meteo.arso.gov.si/met/sl/archive/}
 #' @export
-"daily_temperatures_example"
+"LJ_daily_temperatures"
