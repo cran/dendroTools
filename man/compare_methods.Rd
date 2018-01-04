@@ -8,7 +8,11 @@ compare_methods(formula, dataset, k = 3, repeats = 2, use_caret = TRUE,
   ANN_neurons = 1, MT_M = 4, MT_N = F, MT_U = F, MT_R = F,
   BMT_P = 100, BMT_I = 100, BMT_M = 4, BMT_N = F, BMT_U = F,
   BMT_R = F, RF_mtry = 0, RF_maxnodes = 4, RF_ntree = 200,
-  multiply = 5, returns = c("Calibration", "Validation"), digits = 3)
+  RIDGE_lambda = 0.1, LASSO_lambda = 0.1, polynomial_formula = "",
+  seed_factor = 5, returns = c("Calibration", "Validation"), digits = 3,
+  blocked_CV = FALSE, PCA_transformation = FALSE, log_preprocess = TRUE,
+  components_selection = "automatic", eigenvalues_threshold = 1,
+  N_components = 2, round_bias_cal = 15, round_bias_val = 4)
 }
 \arguments{
 \item{formula}{an object of class "formula" (or one that can be coerced
@@ -56,33 +60,73 @@ have (argument for random forest)}
 
 \item{RF_ntree}{Number of trees to grow (argument for random forest)}
 
-\item{multiply}{an intiger that will be used to change the seed options
-for different repeats. set.seed(multiply*5)}
+\item{RIDGE_lambda}{lambda argument for ridge regression}
+
+\item{LASSO_lambda}{lambda argument for lasso regression}
+
+\item{polynomial_formula}{a symbolic description of polynomial model to be fitted}
+
+\item{seed_factor}{an integer that will be used to change the seed options
+for different repeats. set.seed(seed_factor*5)}
 
 \item{returns}{A character vector that specifies, whether a calibration and/ or
 validation results should be returned.}
 
-\item{digits}{intiger of number of digits to be displayed in the final
+\item{digits}{integer of number of digits to be displayed in the final
 result tables}
+
+\item{blocked_CV}{default is FALSE, if changed to TRUE, blocked cross-validation
+will be used to compare regression methods.}
+
+\item{PCA_transformation}{if set to TRUE, all independent variables will be
+transformed using PCA transformation.}
+
+\item{log_preprocess}{if set to TRUE, variables will be transformed with
+logarithmic transformation before used in PCA}
+
+\item{components_selection}{character string specifying how to select the Principal
+Components used as predictors.
+There are three options: "automatic", "manual" and "plot_selection". If
+parameter is set to automatic, all scores with eigenvalues above 1 will be
+selected. This threshold could be changed by changing the
+eigenvalues_threshold argument. If parameter is set to "manual", user should
+set the number of components with N_components argument. If component
+selection is se to "plot_selection", Scree plot will be shown and user must
+manually enter the number of components used as predictors.}
+
+\item{eigenvalues_threshold}{threshold for automatic selection of Principal Components}
+
+\item{N_components}{number of Principal Components used as predictors}
+
+\item{round_bias_cal}{number of digits for bias in calibration period. Effects
+the outlook of the final ggplot  of mean bias for calibration data (element 3 of
+the output list)}
+
+\item{round_bias_val}{number of digits for bias in validation period. Effects
+the outlook of the final ggplot of mean bias for validation data (element 4 of
+the output list)}
 }
 \value{
-a list with five elements. Element one is a data frame with
-calculated measures for five regression methods. For each regression method
-and each calculated measure, mean and standard deviation are given.
-Element two is similar to element one: a data frame with ranks of calculated
-measures: average rank and share of rank 1 are given. Element three and four
-are ggplot objects of mean bias for calibration (element 3) and validation
-(element 4) data. If returns argument is set to return only "Calibration" or
-"Validation" results, only the three relevant elements will be returned in the
-list. Element five is a data frame with specifications of parameters used for
-different regression methods.
+a list with five elements:
+         $mean_std,  data frame with calculated metrics for five regression methods.
+          For each regression method and each calculated metric, mean and standard
+          deviation are given.
+         $ranks, data frame with ranks of calculated metrics: average rank and %rank_1
+          are given.
+         $bias_cal, ggplot object of mean bias for calibration data.
+         $bias_val, ggplot object of mean bias for validation data. If returns argument
+          is set to return only "Calibration" or "Validation" results, only the three
+          relevant elements will be returned in the list.
+         $parameters, a data frame with specifications of parameters used for different
+          regression methods.
 }
 \description{
-Calculates performance measures for train and test data of different
-regression methods: multiple linear regression (MLR), artificial neural
-networks with Bayesian regularization training algorithm (ANN), M5P model
-trees (MT), model trees with bagging (BMT) and random forest of regression
-trees (RF). Calculated performance measures are correlation coefficient,
+Calculates performance metrics for train and test data of different
+regression methods: multiple linear regression (MLR), ridge and lasso
+regression, artificial neural networks with Bayesian regularization
+training algorithm (ANN), M5P model trees (MT), model trees with bagging
+(BMT), polynomial regression (POLY) and random forest of regression
+trees (RF). Calculated performance metrics are correlation coefficient,
 root mean squared error (RMSE), root relative squared error (RSSE), index
 of agreement (d), reduction of error (RE), coefficient of efficiency
 (CE) and mean bias.
@@ -93,8 +137,10 @@ data(example_dataset_1)
 
 # An example with default settings of machine learning algorithms
 experiment_1 <- compare_methods(formula = MVA~.,
-dataset = example_dataset_1, k = 10, repeats = 2,
-returns = c("Calibration", "Validation"))
+dataset = example_dataset_1, k = 5, repeats = 100,
+returns = c("Calibration", "Validation"), blocked_CV = TRUE, PCA_transformation = FALSE,
+components_selection = "plot_selection", use_caret = TRUE,
+polynomial_formula = "MVA ~ T_APR + T_aug_sep + T_APR^2")
 experiment_1[[1]] # See a data frame results of mean and standard deviation
 # for different methods
 experiment_1[[2]] # See a data frame results of average rank and share of
@@ -107,7 +153,7 @@ experiment_2 <- compare_methods(formula = MVA ~ .,
 dataset = example_dataset_1, k = 5, repeats = 100, ANN_neurons = 1,
 MT_M = 4, MT_N = FALSE, MT_U = FALSE, MT_R = FALSE, BMT_P = 100,
 BMT_I = 100, BMT_M = 4, BMT_N = FALSE, BMT_U = FALSE, BMT_R = FALSE,
-RF_mtry = 0, RF_maxnodes = 4, RF_ntree = 200, multiply = 5,
+RF_mtry = 0, RF_maxnodes = 4, RF_ntree = 200, seed_factor = 5,
 returns = c("Calibration"))
 experiment_2[[1]]
 experiment_2[[2]]

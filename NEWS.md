@@ -1,12 +1,15 @@
-# dendroTools 0.0.4.
+# dendroTools 0.0.5.
 
-* Fifth element is given to the compare_methods() output list. This is a data frame with the final values of parameters used by different regression methods. 
-* New function is added: round_df(). This function rounds all numeric columns in a data frame. 
-* Datasets are updated
-* the method description as part of the title is added to the plot_extreme(), plot_specific() and plot_heatmap()
-* iter function was joined with the compare_methods()
-* random forests model was previously based on RWeka package. From 0.0.4 version on, randomForest package is used to fit random forest models
-* Package version is changed to 0.0.4
-* For the compare_methods(), new parameter is introduced: use_caret (boolean). The parameter is used for model tunning by caret package. 
-* Progress bar is given to compare_methods() and daily_response()
-
+* new feature is added to the daily_response(): the possibility of using rowMedians instead of rowMeans
+* some functions were made internal: smooth_matrix(), plot_extreme(), plot_heatmap(), plot_specific(), round_df(), count_ones()
+* new data is added: LJ_daily_precipitation
+* the support for the tidy data for the env_data data frame is implemented
+* new output elements are given: temporal_stability, corss_validation, results of PC regression (PC_output) and transfer_function
+* plot_extreme(), plot_specifi() and plot_heatmap() are now integrated in daiily_reponse() and given as output elements.
+* The word measure is replaced with word "metric". This way is more correct. 
+* The compare_methods() and daily_response() have a new feature: the possibility of using PCA transformation. 
+* New regression methods are added to the compare_methods(): Ridge and Lasso regression from the glmnet package and polynomial regression
+* Titles of plot_extreme() and plot_specific() have new title attribute: Optimal Selection description
+* The compare_methods() has a new feature: blocked_CV
+* The daily_response() has a new feature: the possibility of using PCA on response data. New examples are added. 
+* Package version is changed to 0.0.5

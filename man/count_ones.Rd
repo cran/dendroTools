@@ -7,15 +7,16 @@
 count_ones(vector)
 }
 \arguments{
-\item{vector}{a vector of intigers}
+\item{vector}{a vector of integers}
 }
 \value{
-an intiger of counted ones
+an integer of counted ones
 }
 \description{
-calculates share of intiger 1 in a vector
+calculates share of integer 1 in a vector
 }
 \examples{
 vector_1 <- seq(1:10)
 count_ones(vector_1)
 }
+\keyword{internal}
