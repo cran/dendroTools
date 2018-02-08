@@ -62,7 +62,7 @@
 #' @param eigenvalues_threshold threshold for automatic selection of Principal Components
 #' @param N_components number of Principal Components used as predictors
 #' @param use_median if set to TRUE, median will be used instead of mean to calculate
-#' averages of various ranges of env_data.
+#' means of various ranges of env_data.
 #' @param temporal_stability_check character string, specifying, how temporal stability
 #' between the optimal selection and response variables will be analysed. Current
 #' possibilities are "sequential" and "progressive". Sequential check will split data into
@@ -85,27 +85,27 @@
 #' columns: "Year", "DOY", "Precipitation/Temperature/etc."
 #'
 #' @return a list with 13 elements:
-#'   $calculations, a matrix with calculated metrics
+#'   $calculations, a matrix with calculated metrics.
 #'   $method, the character string of a method
-#'   $metric, the character string indicating the metric used for calculations
+#'   $metric, the character string indicating the metric used for calculations.
 #'   $analysed_period, the character string specifying the analysed period based on the
 #'    information from row names. If there are no row names, this argument is given as NA.
 #'   $optimized_return, data frame with two columns, response variable and aggregated
 #'    (averaged) daily data that return the optimal results. This data.frame could be
 #'    directly used to calibrate a model for climate reconstruction.
 #'   $optimized_return_all, a data frame with aggregated daily data, that returned the optimal
-#'   result for the entire env_data (and not only subset of analysed years)
+#'   result for the entire env_data (and not only subset of analysed years).
 #'   $transfer_function, a ggplot object: scatter plot of optimized return and a transfer
-#'    line of the selected method
+#'    line of the selected method.
 #'   $temporal_stability, a data frame with calculations of selected metric for different
-#'    temporal subsets
-#'   $cross_validation, a data frame with cross validation results
-#'   $plot_heatmap, ggplot2 object: a heatmap of calculated metrics
+#'    temporal subsets.
+#'   $cross_validation, a data frame with cross validation results.
+#'   $plot_heatmap, ggplot2 object: a heatmap of calculated metrics.
 #'   $plot_extreme, ggplot2 object: line plot of a row with the highest value in a matrix
-#'    of calculated metrics
+#'    of calculated metrics.
 #'   $plot_specific, ggplot2 object: line plot of a row with a selected window width in a
-#'    matrix of calculated metrics
-#'   $PCA_output, princomp object: the result output of the PCA analysis
+#'    matrix of calculated metrics.
+#'   $PCA_output, princomp object: the result output of the PCA analysis.
 #'
 #' @export
 #'
@@ -181,7 +181,6 @@
 #'
 #' example_multiproxy$plot_heatmap
 #' }
-
 
 daily_response <- function(response, env_data, method = "lm",
                            metric = "r.squared", lower_limit = 30,
@@ -798,7 +797,7 @@ daily_response <- function(response, env_data, method = "lm",
   # brnn sometimes (1 - 3 % of calculations) fails to construct a realistic
   # result. In those cases, much lower r.squared (or adj.r.squared) are
   # calculated. smooth_matrix function removes unrealistic calculations and
-  # replace them with an average of values in a window 3 x 3. Maximum value
+  # replace them with mean of values in a window 3 x 3. Maximum value
   # is not affected by any means.
   # [i - 1, j - 1], [i - 1, j], [i - 1, j + 1]
   # [    i, j - 1], [    i, j], [    i, j + 1]

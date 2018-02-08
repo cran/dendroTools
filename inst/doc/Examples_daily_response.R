@@ -128,7 +128,7 @@ linear_model <- lm(Optimized_return ~ TRW, data = example_reconstruction_lin$opt
 reconstruction <- data.frame(predictions = predict(linear_model, newdata = data_TRW))
 
 ## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 11: The reconstructed average temperature May 15 - June 27 with linear model")----
-plot(row.names(reconstruction),reconstruction$predictions, type = "l", xlab = "Year", ylab = "Average temperature May 15 - Jun 27 [ºC]")
+plot(row.names(data_TRW), reconstruction$predictions, type = "l", xlab = "Year", ylab = "Mean temperature May 15 - Jun 27 [ºC]")
 
 ## ---- results = 'hide'---------------------------------------------------
 # Load the dendroTools and brnn R package
@@ -163,8 +163,8 @@ brnn_model <- brnn(Optimized_return ~ TRW, data = example_reconstruction_brnn$op
 reconstruction <- data.frame(predictions = predict(brnn_model, newdata = data_TRW))
 
 ## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 14: The reconstructed average temperature May 15 - June 27 with the nonlinear brnn model")----
-plot(row.names(reconstruction),reconstruction$predictions, type = "l", xlab = "Year",
-     ylab = "Average temperature May 15 - Jun 27 [ºC]")
+plot(row.names(data_TRW),reconstruction$predictions, type = "l", xlab = "Year",
+     ylab = "Mean temperature May 15 - Jun 27 [ºC]")
 
 ## ---- results = 'hide'---------------------------------------------------
 # Load the dendroTools and brnn R package
