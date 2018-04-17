@@ -19,6 +19,9 @@
 #' than 2.
 #' @param optimize if set to TRUE, the package caret will be used to tune parameters
 #' for regression methods
+#' @param dataset_complete optional, a data frame with the full length of tree-ring
+#' parameter, which will be used to reconstruct the climate variable specified
+#' with the formula argument.
 #' @param BRNN_neurons number of neurons to be used for the brnn method
 #' @param MT_M minimum number of instances used by model trees
 #' @param MT_N unpruned (argument for model trees)
@@ -30,17 +33,17 @@
 #' @param BMT_N unpruned (argument for bagging of model trees)
 #' @param BMT_U unsmoothed (argument for bagging of model trees)
 #' @param BMT_R use regression trees (argument for bagging of model trees)
-#' @param RF_mtry Number of variables randomly sampled as candidates at each
-#' split (argument for random forest)
-#' @param RF_maxnodes Maximum number of terminal nodes trees in the forest can
-#' have (argument for random forest)
-#' @param RF_ntree Number of trees to grow (argument for random forest)
+#' @param RF_P bagSizePercent (argument for random forest)
+#' @param RF_I number of iterations (argument for random forest)
+#' @param RF_depth maxDepth (argument for random forest)
 #' @param seed_factor an integer that will be used to change the seed options
 #' for different repeats.
-#' @param returns A character vector that specifies, whether a calibration and/ or
-#' validation results should be returned.
 #' @param digits integer of number of digits to be displayed in the final
 #' result tables
+#' @param edge_share the share of the data to be considered as the edge (extreme) data.
+#' This argument could be between 0.10 and 0.50. If the argument is set to 0.10, then
+#' the 5 % of the maximal extreme values and 5 % of the minimal extreme values are
+#' considered to be the edge data.
 #' @param blocked_CV default is FALSE, if changed to TRUE, blocked cross-validation
 #' will be used to compare regression methods.
 #' @param PCA_transformation if set to TRUE, all independent variables will be
@@ -64,26 +67,43 @@
 #' @param round_bias_val number of digits for bias in validation period. Effects
 #' the outlook of the final ggplot of mean bias for validation data (element 4 of
 #' the output list)
+#' @param n_bins number of bins used for the histograms of mean bias
 #' @param methods a vector of strings related to methods that will be compared. A full
 #' method vector is methods = c("MLR", "BRNN", "MT", "BMT", "RF").
 #' To use only a subset of methods, pass a vector of methods that you would like to compare.
+#' @param tuning_metric a string that specifies what summary metric will be used to select
+#' the optimal value of tuning parameters. By default, the argument is set to "RMSE". It is
+#' also possible to use "RSquared".
+#' @param BRNN_neurons_vector a vector of possible values for BRNN_neurons argument optimization
+#' @param MT_M_vector a vector of possible values for MT_M argument optimization
+#' @param MT_N_vector a vector of possible values for MT_N argument optimization
+#' @param MT_U_vector a vector of possible values for MT_U argument optimization
+#' @param MT_R_vector a vector of possible values for MT_R argument optimization
+#' @param BMT_P_vector a vector of possible values for BMT_P argument optimization
+#' @param BMT_I_vector a vector of possible values for BMT_I argument optimization
+#' @param BMT_M_vector a vector of possible values for BMT_M argument optimization
+#' @param BMT_N_vector a vector of possible values for BMT_N argument optimization
+#' @param BMT_U_vector a vector of possible values for BMT_U argument optimization
+#' @param BMT_R_vector a vector of possible values for BMT_R argument optimization
+#' @param RF_P_vector a vector of possible values for RF_P argument optimization
+#' @param RF_I_vector a vector of possible values for RF_I argument optimization
+#' @param RF_depth_vector a vector of possible values for RF_depth argument optimization
 #'
-#' @return a list with eight elements:
-#'          $mean_std,  data frame with calculated metrics for five regression methods.
-#'           For each regression method and each calculated metric, mean and standard
-#'           deviation are given.
-#'          $ranks, data frame with ranks of calculated metrics: mean rank and %rank_1
-#'           are given.
-#'          $bias_cal, ggplot object of mean bias for calibration data.
-#'          $bias_val, ggplot object of mean bias for validation data. If returns argument
-#'           is set to return only "Calibration" or "Validation" results, only the three
-#'           relevant elements will be returned in the list.
-#'          $transfer_function, ggplot object with transfer functions of methods.
-#'          $transfer_function_together, ggplot object with transfer functions of methods
-#'           plotted together.
-#'          $parameters, a data frame with specifications of parameters used for different
-#'           regression methods.
-#'          $PCA_output, princomp object: the result output of the PCA analysis.
+#' @return a list with ten elements:
+#'\tabular{rll}{
+#'  1 \tab $mean_std   \tab data frame with calculated metrics for the selected regression methods. For each regression method and each calculated metric, mean and standard deviation are given\cr
+#'  2 \tab $ranks \tab data frame with ranks of calculated metrics: mean rank and  share of rank_1 are given \cr
+#'  3 \tab $edge_results   \tab data frame with calculated performance metrics for the central-edge test. The central part of the data represents the calibration data, while the edge data, i.e. extreme values, represent the edge data. Different regression models are calibrated using the central data and validated for the edge (extreme) data. This test is particularly important to assess the performance of models for the prediction of the extreme data. The share of the edge (extreme) data is defined with the edge_share argument \cr
+#'  4 \tab $bias_cal   \tab ggplot object of mean bias for calibration data \cr
+#'  5 \tab $bias_val    \tab ggplot object of mean bias for validation data \cr
+#'  6 \tab $transfer_functions   \tab ggplot or plotly object with transfer functions of methods \cr
+#'  7 \tab $transfer_functions_together    \tab ggplot or plotly object with transfer functions of methods plotted together \cr
+#'  8 \tab $parameter_values    \tab a data frame with specifications of parameters used for different regression methods \cr
+#'  9 \tab $PCA_output    \tab princomp object: the result output of the PCA analysis \cr
+#'  10 \tab $reconstructions    \tab ggplot object: reconstructed dependent variable based on the dataset_complete argument, facet is used to split plots by methods  \cr
+#'  11 \tab $reconstructions_together    \tab ggplot object: reconstructed dependent variable based on the dataset_complete argument, all reconstructions are on the same plot
+#'}
+#'
 #' @export
 #'
 #' @references
@@ -122,10 +142,9 @@
 #'
 #' # An example with default settings of machine learning algorithms
 #' experiment_1 <- compare_methods(formula = MVA~.,
-#' dataset = example_dataset_1, k = 25, repeats = 10,
-#' returns = c("Calibration", "Validation"), blocked_CV = TRUE,
+#' dataset = example_dataset_1, k = 25, repeats = 10, blocked_CV = TRUE,
 #' PCA_transformation = FALSE, components_selection = "automatic",
-#' optimize = TRUE, methods = c("MLR", "BRNN"))
+#' optimize = TRUE, methods = c("MLR", "BRNN"), tuning_metric = "RSquared")
 #' experiment_1$mean_std
 #' experiment_1$ranks
 #' experiment_1$bias_cal
@@ -134,13 +153,13 @@
 #' experiment_1$transfer_functions_together
 #' experiment_1$PCA_output
 #' experiment_1$parameter_values
+#' experiment_1$transfer_functions
 #'
-#' experiment_2 <- compare_methods(formula = MVA ~ .,
+#' experiment_2 <- compare_methods(formula = MVA ~  T_APR,
 #' dataset = example_dataset_1, k = 5, repeats = 10, BRNN_neurons = 1,
 #' MT_M = 4, MT_N = FALSE, MT_U = FALSE, MT_R = FALSE, BMT_P = 100,
 #' BMT_I = 100, BMT_M = 4, BMT_N = FALSE, BMT_U = FALSE, BMT_R = FALSE,
-#' RF_mtry = 0, RF_maxnodes = 4, RF_ntree = 200, seed_factor = 5,
-#' returns = c("Calibration"))
+#' RF_P = 100, RF_I = 100, RF_depth = 0, seed_factor = 5)
 #' experiment_2$mean_std
 #' experiment_2$ranks
 #' experiment_2$bias_cal
@@ -151,38 +170,72 @@
 #' experiment_3 <- compare_methods(formula = MVA ~ .,
 #' dataset = example_dataset_1, k = 2, repeats = 5,
 #' methods = c("MLR", "BRNN", "MT", "BMT"),
-#' optimize = TRUE, returns = c("Validation"))
+#' optimize = TRUE)
 #' experiment_3$mean_std
 #' experiment_3$ranks
 #' experiment_3$bias_val
 #' experiment_3$transfer_functions
 #' experiment_3$transfer_functions_together
 #' experiment_3$parameter_values
+#'
+#' library(dendroTools)
+#' library(ggplot2)
+#' data(dataset_TRW)
+#' comparison_TRW <- compare_methods(formula = T_Jun_Jul ~ TRW, dataset = dataset_TRW,
+#' k = 3, repeats = 10, optimize = TRUE, methods = c("MLR", "MT", "BMT", "BRNN"),
+#' seed_factor = 5, dataset_complete = dataset_TRW_complete)
+#' comparison_TRW$mean_std
+#' comparison_TRW$bias_val
+#' comparison_TRW$transfer_functions + xlab(expression(paste('TRW'))) +
+#' ylab("June-July Mean Temperature [°C]")
+#' comparison_TRW$reconstructions
+#' comparison_TRW$reconstructions_together
 #' }
 
 compare_methods <- function(formula, dataset, k = 10, repeats = 2,
-                            optimize = TRUE,
+                            optimize = TRUE, dataset_complete = NULL,
                             BRNN_neurons = 1, MT_M = 4, MT_N = F, MT_U = F,
                             MT_R = F, BMT_P = 100, BMT_I = 100, BMT_M = 4,
-                            BMT_N = F, BMT_U = F, BMT_R = F, RF_mtry = 0,
-                            RF_maxnodes = 4, RF_ntree = 200, seed_factor = 5,
-                            returns = c("Calibration", "Validation"),
+                            BMT_N = F, BMT_U = F, BMT_R = F, RF_P = 100,
+                            RF_I = 100, RF_depth = 0, seed_factor = 5,
                             digits = 3, blocked_CV = FALSE,
                             PCA_transformation = FALSE, log_preprocess = TRUE,
                             components_selection = 'automatic',
                             eigenvalues_threshold = 1, N_components = 2,
                             round_bias_cal = 15, round_bias_val = 4,
-                            methods = c("MLR", "BRNN", "MT", "BMT", "RF")) {
+                            n_bins = 30, edge_share = 0.10,
+                            methods = c("MLR", "BRNN", "MT", "BMT", "RF"),
+                            tuning_metric = "RMSE",
+                            BRNN_neurons_vector = c(1, 2, 3),
+                            MT_M_vector  = c(4, 8, 16, 25),
+                            MT_N_vector  = c(TRUE, FALSE),
+                            MT_U_vector = c(TRUE, FALSE),
+                            MT_R_vector  = c(FALSE),
+                            BMT_P_vector = c(100),
+                            BMT_I_vector = c(100),
+                            BMT_M_vector  = c(4, 8, 16, 25),
+                            BMT_N_vector  = c(TRUE, FALSE),
+                            BMT_U_vector  = c(TRUE, FALSE),
+                            BMT_R_vector = c(FALSE),
+                            RF_P_vector = c(100),
+                            RF_I_vector = c(100),
+                            RF_depth_vector  = c(0, 2)) {
 
 if (k < 2 | k > 26){
   stop(paste0("Selected k is ", k,", but it should be between 2 and 26"))
 }
 
+if (repeats > 1 & blocked_CV == TRUE){
+  warning("blocked_CV is set to TRUE, repeats argument is ignored")
+}
+
 dataset <- data.frame(dataset) # dataset needs to be of class data.frame!
 
-full_methods = c("MLR", "BRNN", "MT", "BMT", "RF")
+full_methods <- c("MLR", "BRNN", "MT", "BMT", "RF")
 
 methods <- sort(methods)
+
+set.seed(seed_factor) # We ensure that the optimization results are always the same
 
 # This function is used to calculate metrics r, RMSE, RRSE, d, RE, CE and bias
 # for train and test data
@@ -251,6 +304,8 @@ DepIndex <- grep(as.character(formula[[2]]), colnames(dataset))
 quazi_mod <- lm(formula, data = dataset)
 numIND <- length(quazi_mod[[1]]) - 1
 indep_names <- colnames(quazi_mod[[7]][[1]])[-1]
+indep_name_1 <- colnames(quazi_mod[[7]][[1]])[-1][1]
+indep_name_2 <- colnames(quazi_mod[[7]][[1]])[-1][2]
 allnames <- c(as.character(formula[[2]]), indep_names)
 
 # So, sometimes there are variables in dataframe, which are not used as predictors.
@@ -259,26 +314,106 @@ dataset <- dataset[ names(dataset)[names(dataset) %in% allnames] ]
 
 
 # Here we use caret package to tune parameters of different methods
+# Optimization for randomized procedure
 
-if (optimize == TRUE){
+if (optimize == TRUE & blocked_CV == FALSE){
+
+  print("Optimization phase...")
 
   model = NULL
 
   if ("BRNN" %in% methods){
-    # 1 Optimization for BRNN
-    capture.output(model <- train(formula, data = dataset, method = "brnn"))
-    BRNN_neurons = as.numeric(model[[6]][1])
+
+    print("Tuning parameters for the BRNN method...")
+    # 2 Optimization for BRNN
+    BRNN_neurons <- BRNN_neurons_vector
+    hyper_grid <- expand.grid(neurons = BRNN_neurons)
+
+    # Number of potential models in the grid
+    num_models <- nrow(hyper_grid)
+
+    # Create an empty list to store models
+    grade_models <- list()
+
+    # Write a loop over the rows of hyper_grid to train the grid of models
+    for (i in 1:num_models) {
+
+      # Get minsplit, maxdepth values at row i
+      neurons <- hyper_grid$neurons[i]
+
+      # cross_validation
+      foldi <- seq(1:k)
+      foldi <- paste("fold_", foldi)
+
+      #Randomly shuffle the data
+      dataset <- dataset[sample(nrow(dataset)), ]
+
+      #Create 10 equally size folds
+      folds <- cut(seq(1, nrow(dataset)), breaks = k, labels = FALSE)
+
+      #Perform k fold cross validation
+      tuning_vector <- c()
+
+      for (j in 1:k){
+
+        #Segement your data by fold using the which() function
+        testIndexes <- which(folds == j, arr.ind = TRUE)
+        test <- dataset[testIndexes, ]
+        train <- dataset[-testIndexes, ]
+
+        #MLR MODEL
+        capture.output(model_temp <- brnn(formula, data = train, neurons = neurons, verbose = FALSE))
+        test_observed <- test[, DepIndex]
+        test_predicted <- predict(model_temp, test)
+
+        if (tuning_metric == "RMSE"){
+          tuning_vector[j] <- MLmetrics::RMSE(test_predicted, test_observed)
+        } else if (tuning_metric == "RSquared"){
+          tuning_vector[j] <- cor(test_predicted, test_observed)^2
+        } else {
+          stop(paste0("tuning_metric argument should be RMSE or RSquared! Instead it is ", tuning_metric))
+        }
+
+      }
+
+      grade_models[i] <- mean(tuning_vector)
+
+    }
+
+    grade_list <- unlist(grade_models)
+
+    # Identify the model with smallest validation set RMSE
+    if (tuning_metric == "RMSE"){
+        best_model <- which.min(grade_list)}
+    if (tuning_metric == "RSquared"){
+      best_model <- which.max(grade_list)
+      }
+
+    best_parameters <- hyper_grid[best_model, ]
+
+    BRNN_neurons <- as.numeric(best_parameters[1])
   }
 
 
-  if (("MT" %in% methods) | ("BMT" %in% methods) ){
-  # 2 Optimization for MT
-  MT_N <- c(TRUE, FALSE)
-  MT_U <- c(TRUE, FALSE)
-  MT_R <- FALSE
-  MT_M <- (seq(2, 30, 4))
 
-  hyper_grid <- expand.grid(N = MT_N, U = MT_U, M = MT_M)
+
+
+
+
+
+
+
+  if ("MT" %in% methods){
+
+  print("Tuning parameters for the MT method...")
+
+  # 2 Optimization for MT
+  MT_N <- MT_N_vector
+  MT_U <- MT_U_vector
+  MT_R <- MT_R_vector
+  MT_M <- MT_M_vector
+
+  hyper_grid <- expand.grid(N = MT_N, U = MT_U, M = MT_M, R = MT_R)
 
   # Number of potential models in the grid
   num_models <- nrow(hyper_grid)
@@ -293,6 +428,7 @@ if (optimize == TRUE){
     N <- hyper_grid$N[i]
     U <- hyper_grid$U[i]
     M <- hyper_grid$M[i]
+    R <- hyper_grid$R[i]
 
     # cross_validation
     foldi <- seq(1:k)
@@ -305,7 +441,7 @@ if (optimize == TRUE){
     folds <- cut(seq(1, nrow(dataset)), breaks = k, labels = FALSE)
 
     #Perform k fold cross validation
-    rmse_vector <- c()
+    tuning_vector <- c()
 
     for (j in 1:k){
 
@@ -316,47 +452,619 @@ if (optimize == TRUE){
 
       #MLR MODEL
       model_temp <- M5P(formula, data = train,
-                        control = Weka_control(M = M, N =  N, U = U, R = FALSE))
+                        control = Weka_control(M = M, N =  N, U = U, R = R))
 
       test_observed <- test[, DepIndex]
       test_predicted <- predict(model_temp, test)
 
-      rmse_vector[j] <- MLmetrics::RMSE(test_predicted, test_observed)
+      if (tuning_metric == "RMSE"){
+        tuning_vector[j] <- MLmetrics::RMSE(test_predicted, test_observed)
+      } else if (tuning_metric == "RSquared"){
+        tuning_vector[j] <- cor(test_predicted, test_observed)^2
+      } else {
+        stop(paste0("tuning_metric argument should be RMSE or RSquared! Instead it is ", tuning_metric))
+      }
+
     }
 
-    grade_models[i] <- mean(rmse_vector)
+    grade_models[i] <- mean(tuning_vector)
 
   }
 
   grade_list <- unlist(grade_models)
 
   # Identify the model with smallest validation set RMSE
-  best_model <- which.min(grade_list)
+  if (tuning_metric == "RMSE"){
+    best_model <- which.min(grade_list)}
+  if (tuning_metric == "RSquared"){
+    best_model <- which.max(grade_list)
+  }
 
   best_parameters <- hyper_grid[best_model, ]
 
-  MT_M <- as.numeric(best_parameters[3])
-  MT_U <- as.logical(best_parameters[2])
   MT_N <- as.logical(best_parameters[1])
-
-
-  # 3 Optimization for BMT, just take MT rezults
-  BMT_N <- MT_N
-  BMT_U <- MT_U
-  BMT_R <- MT_R
-  BMT_M <- MT_M
+  MT_U <- as.logical(best_parameters[2])
+  MT_M <- as.numeric(best_parameters[3])
+  MT_R <- as.logical(best_parameters[4])
   }
+
+
+
+
+
+
+
+
+  if ("BMT" %in% methods){
+
+    print("Tuning parameters for the BMT method...")
+
+    # 2 Optimization for MT
+    BMT_P <- BMT_P_vector
+    BMT_I <- BMT_I_vector
+    BMT_N <- BMT_N_vector
+    BMT_U <- BMT_U_vector
+    BMT_R <- BMT_R_vector
+    BMT_M <- BMT_M_vector
+
+    hyper_grid <- expand.grid(P = BMT_P, I = BMT_I, N = BMT_N, U = BMT_U, M = BMT_M, R = BMT_R)
+
+    # Number of potential models in the grid
+    num_models <- nrow(hyper_grid)
+
+    # Create an empty list to store models
+    grade_models <- list()
+
+    # Write a loop over the rows of hyper_grid to train the grid of models
+    for (i in 1:num_models) {
+
+      # Get minsplit, maxdepth values at row i
+      P <- hyper_grid$P[i]
+      I <- hyper_grid$I[i]
+      R <- hyper_grid$R[i]
+      N <- hyper_grid$N[i]
+      U <- hyper_grid$U[i]
+      M <- hyper_grid$M[i]
+
+      # cross_validation
+      foldi <- seq(1:k)
+      foldi <- paste("fold_", foldi)
+
+      #Randomly shuffle the data
+      dataset <- dataset[sample(nrow(dataset)), ]
+
+      #Create 10 equally size folds
+      folds <- cut(seq(1, nrow(dataset)), breaks = k, labels = FALSE)
+
+      #Perform k fold cross validation
+      tuning_vector <- c()
+
+      for (j in 1:k){
+
+        #Segement your data by fold using the which() function
+        testIndexes <- which(folds == j, arr.ind = TRUE)
+        test <- dataset[testIndexes, ]
+        train <- dataset[-testIndexes, ]
+
+        #MLR MODEL
+        model_temp <- Bagging(formula, data = train,
+                              control = Weka_control(P = P, I = I,
+                              W = list("weka.classifiers.trees.M5P",
+                              M = M, N = N, U = U, R = R)))
+
+        test_observed <- test[, DepIndex]
+        test_predicted <- predict(model_temp, test)
+
+        if (tuning_metric == "RMSE"){
+          tuning_vector[j] <- MLmetrics::RMSE(test_predicted, test_observed)
+        } else if (tuning_metric == "RSquared"){
+          tuning_vector[j] <- cor(test_predicted, test_observed)^2
+        } else {
+          stop(paste0("tuning_metric argument should be RMSE or RSquared! Instead it is ", tuning_metric))
+        }
+
+      }
+
+      grade_models[i] <- mean(tuning_vector)
+
+    }
+
+    grade_list <- unlist(grade_models)
+
+    # Identify the model with smallest validation set RMSE
+    if (tuning_metric == "RMSE"){
+      best_model <- which.min(grade_list)}
+    if (tuning_metric == "RSquared"){
+      best_model <- which.max(grade_list)
+    }
+
+    best_parameters <- hyper_grid[best_model, ]
+
+    BMT_P <- as.numeric(best_parameters[1])
+    BMT_I <- as.numeric(best_parameters[2])
+    BMT_N <- as.logical(best_parameters[3])
+    BMT_U <- as.logical(best_parameters[4])
+    BMT_M <- as.numeric(best_parameters[5])
+    BMT_R <- as.logical(best_parameters[6])
+  }
+
+
+
+
+
+
+
 
   if ("RF" %in% methods){
-    # 3 Optimization for Random Forest
-    suppressWarnings(capture.output(model <- train(formula, data = dataset, method = "rf")))
-    RF_mtry = as.numeric(model[[6]][1])
+    # 2 Optimization for RF
+
+    print("Tuning parameters for the RF method...")
+
+    RF_P <- RF_P_vector
+    RF_I <- RF_I_vector
+    RF_depth  <- RF_depth_vector
+
+    hyper_grid <- expand.grid(P = RF_P, I = RF_I, depth = RF_depth)
+
+    # Number of potential models in the grid
+    num_models <- nrow(hyper_grid)
+
+    # Create an empty list to store models
+    grade_models <- list()
+
+    # Write a loop over the rows of hyper_grid to train the grid of models
+    for (i in 1:num_models) {
+
+      # Get minsplit, maxdepth values at row i
+      P <- hyper_grid$P[i]
+      I <- hyper_grid$I[i]
+      depth <- hyper_grid$depth[i]
+
+      # cross_validation
+      foldi <- seq(1:k)
+      foldi <- paste("fold_", foldi)
+
+      #Randomly shuffle the data
+      dataset <- dataset[sample(nrow(dataset)), ]
+
+      #Create 10 equally size folds
+      folds <- cut(seq(1, nrow(dataset)), breaks = k, labels = FALSE)
+
+      #Perform k fold cross validation
+      tuning_vector <- c()
+
+      for (j in 1:k){
+
+        #Segement your data by fold using the which() function
+        testIndexes <- which(folds == j, arr.ind = TRUE)
+        test <- dataset[testIndexes, ]
+        train <- dataset[-testIndexes, ]
+
+        #MLR MODEL
+        RF <- make_Weka_classifier("weka/classifiers/trees/RandomForest")
+        model_temp <- RF(formula, data = train, control = Weka_control(P = P, I = I,
+                                                                     depth = depth))
+
+        test_observed <- test[, DepIndex]
+        test_predicted <- predict(model_temp, test)
+
+        if (tuning_metric == "RMSE"){
+          tuning_vector[j] <- MLmetrics::RMSE(test_predicted, test_observed)
+        } else if (tuning_metric == "RSquared"){
+          tuning_vector[j] <- cor(test_predicted, test_observed)^2
+        } else {
+          stop(paste0("tuning_metric argument should be RMSE or RSquared! Instead it is ", tuning_metric))
+        }
+
+      }
+
+      grade_models[i] <- mean(tuning_vector)
+
+    }
+
+    grade_list <- unlist(grade_models)
+
+    # Identify the model with smallest validation set RMSE
+    if (tuning_metric == "RMSE"){
+      best_model <- which.min(grade_list)}
+    if (tuning_metric == "RSquared"){
+      best_model <- which.max(grade_list)
+    }
+
+    best_parameters <- hyper_grid[best_model, ]
+
+    RF_P <- as.numeric(best_parameters[1])
+    RF_I <- as.numeric(best_parameters[2])
+    RF_depth <- as.numeric(best_parameters[3])
   }
+
 }
+
+
+###############################################################################
+# Optimization for blocked_CV
+
+
+if (optimize == TRUE & blocked_CV == TRUE){
+
+  print("Optimization phase...")
+
+  model = NULL
+
+  if ("BRNN" %in% methods){
+
+    print("Tuning parameters for the BRNN method...")
+    # 2 Optimization for BRNN
+    BRNN_neurons <- BRNN_neurons_vector
+    hyper_grid <- expand.grid(neurons = BRNN_neurons)
+
+    # Number of potential models in the grid
+    num_models <- nrow(hyper_grid)
+
+    # Create an empty list to store models
+    grade_models <- list()
+
+    # Write a loop over the rows of hyper_grid to train the grid of models
+    for (i in 1:num_models) {
+
+      # Get minsplit, maxdepth values at row i
+      neurons <- hyper_grid$neurons[i]
+
+      # cross_validation
+      foldi <- seq(1:k)
+      foldi <- paste("fold_", foldi)
+
+      #Randomly shuffle the data
+      # dataset <- dataset[sample(nrow(dataset)), ]
+
+      #Create 10 equally size folds
+      folds <- cut(seq(1, nrow(dataset)), breaks = k, labels = FALSE)
+
+      #Perform k fold cross validation
+      tuning_vector <- c()
+
+      for (j in 1:k){
+
+        #Segement your data by fold using the which() function
+        testIndexes <- which(folds == j, arr.ind = TRUE)
+        test <- dataset[testIndexes, ]
+        train <- dataset[-testIndexes, ]
+
+        #MLR MODEL
+        capture.output(model_temp <- brnn(formula, data = train, neurons = neurons, verbose = FALSE))
+        test_observed <- test[, DepIndex]
+        test_predicted <- predict(model_temp, test)
+
+        if (tuning_metric == "RMSE"){
+          tuning_vector[j] <- MLmetrics::RMSE(test_predicted, test_observed)
+        } else if (tuning_metric == "RSquared"){
+          tuning_vector[j] <- cor(test_predicted, test_observed)^2
+        } else {
+          stop(paste0("tuning_metric argument should be RMSE or RSquared! Instead it is ", tuning_metric))
+        }
+
+      }
+
+      grade_models[i] <- mean(tuning_vector)
+
+    }
+
+    grade_list <- unlist(grade_models)
+
+    # Identify the model with smallest validation set RMSE
+    if (tuning_metric == "RMSE"){
+      best_model <- which.min(grade_list)}
+    if (tuning_metric == "RSquared"){
+      best_model <- which.max(grade_list)
+    }
+
+    best_parameters <- hyper_grid[best_model, ]
+
+    BRNN_neurons <- as.numeric(best_parameters[1])
+  }
+
+
+
+
+  if ("MT" %in% methods){
+
+    print("Tuning parameters for the MT method...")
+
+    # 2 Optimization for MT
+    MT_N <- MT_N_vector
+    MT_U <- MT_U_vector
+    MT_R <- MT_R_vector
+    MT_M <- MT_M_vector
+
+    hyper_grid <- expand.grid(N = MT_N, U = MT_U, M = MT_M, R = MT_R)
+
+    # Number of potential models in the grid
+    num_models <- nrow(hyper_grid)
+
+    # Create an empty list to store models
+    grade_models <- list()
+
+    # Write a loop over the rows of hyper_grid to train the grid of models
+    for (i in 1:num_models) {
+
+      # Get minsplit, maxdepth values at row i
+      N <- hyper_grid$N[i]
+      U <- hyper_grid$U[i]
+      M <- hyper_grid$M[i]
+      R <- hyper_grid$R[i]
+
+      # cross_validation
+      foldi <- seq(1:k)
+      foldi <- paste("fold_", foldi)
+
+      #Randomly shuffle the data
+      #dataset <- dataset[sample(nrow(dataset)), ]
+
+      #Create 10 equally size folds
+      folds <- cut(seq(1, nrow(dataset)), breaks = k, labels = FALSE)
+
+      #Perform k fold cross validation
+      tuning_vector <- c()
+
+      for (j in 1:k){
+
+        #Segement your data by fold using the which() function
+        testIndexes <- which(folds == j, arr.ind = TRUE)
+        test <- dataset[testIndexes, ]
+        train <- dataset[-testIndexes, ]
+
+        #MLR MODEL
+        model_temp <- M5P(formula, data = train,
+                          control = Weka_control(M = M, N =  N, U = U, R = R))
+
+        test_observed <- test[, DepIndex]
+        test_predicted <- predict(model_temp, test)
+
+        if (tuning_metric == "RMSE"){
+          tuning_vector[j] <- MLmetrics::RMSE(test_predicted, test_observed)
+        } else if (tuning_metric == "RSquared"){
+          tuning_vector[j] <- cor(test_predicted, test_observed)^2
+        } else {
+          stop(paste0("tuning_metric argument should be RMSE or RSquared! Instead it is ", tuning_metric))
+        }
+
+      }
+
+      grade_models[i] <- mean(tuning_vector)
+
+    }
+
+    grade_list <- unlist(grade_models)
+
+    # Identify the model with smallest validation set RMSE
+    if (tuning_metric == "RMSE"){
+      best_model <- which.min(grade_list)}
+    if (tuning_metric == "RSquared"){
+      best_model <- which.max(grade_list)
+    }
+
+    best_parameters <- hyper_grid[best_model, ]
+
+    MT_N <- as.logical(best_parameters[1])
+    MT_U <- as.logical(best_parameters[2])
+    MT_M <- as.numeric(best_parameters[3])
+    MT_R <- as.logical(best_parameters[4])
+  }
+
+
+
+
+
+
+
+
+  if ("BMT" %in% methods){
+
+    print("Tuning parameters for the BMT method...")
+
+    # 2 Optimization for MT
+    BMT_P <- BMT_P_vector
+    BMT_I <- BMT_I_vector
+    BMT_N <- BMT_N_vector
+    BMT_U <- BMT_U_vector
+    BMT_R <- BMT_R_vector
+    BMT_M <- BMT_M_vector
+
+    hyper_grid <- expand.grid(P = BMT_P, I = BMT_I, N = BMT_N, U = BMT_U, M = BMT_M, R = BMT_R)
+
+    # Number of potential models in the grid
+    num_models <- nrow(hyper_grid)
+
+    # Create an empty list to store models
+    grade_models <- list()
+
+    # Write a loop over the rows of hyper_grid to train the grid of models
+    for (i in 1:num_models) {
+
+      # Get minsplit, maxdepth values at row i
+      P <- hyper_grid$P[i]
+      I <- hyper_grid$I[i]
+      R <- hyper_grid$R[i]
+      N <- hyper_grid$N[i]
+      U <- hyper_grid$U[i]
+      M <- hyper_grid$M[i]
+
+      # cross_validation
+      foldi <- seq(1:k)
+      foldi <- paste("fold_", foldi)
+
+      #Randomly shuffle the data
+      #dataset <- dataset[sample(nrow(dataset)), ]
+
+      #Create 10 equally size folds
+      folds <- cut(seq(1, nrow(dataset)), breaks = k, labels = FALSE)
+
+      #Perform k fold cross validation
+      tuning_vector <- c()
+
+      for (j in 1:k){
+
+        #Segement your data by fold using the which() function
+        testIndexes <- which(folds == j, arr.ind = TRUE)
+        test <- dataset[testIndexes, ]
+        train <- dataset[-testIndexes, ]
+
+        #MLR MODEL
+        model_temp <- Bagging(formula, data = train,
+                              control = Weka_control(P = P, I = I,
+                                                     W = list("weka.classifiers.trees.M5P",
+                                                              M = M, N = N, U = U, R = R)))
+
+        test_observed <- test[, DepIndex]
+        test_predicted <- predict(model_temp, test)
+
+        if (tuning_metric == "RMSE"){
+          tuning_vector[j] <- MLmetrics::RMSE(test_predicted, test_observed)
+        } else if (tuning_metric == "RSquared"){
+          tuning_vector[j] <- cor(test_predicted, test_observed)^2
+        } else {
+          stop(paste0("tuning_metric argument should be RMSE or RSquared! Instead it is ", tuning_metric))
+        }
+
+      }
+
+      grade_models[i] <- mean(tuning_vector)
+
+    }
+
+    grade_list <- unlist(grade_models)
+
+    # Identify the model with smallest validation set RMSE
+    if (tuning_metric == "RMSE"){
+      best_model <- which.min(grade_list)}
+    if (tuning_metric == "RSquared"){
+      best_model <- which.max(grade_list)
+    }
+
+    best_parameters <- hyper_grid[best_model, ]
+
+    BMT_P <- as.numeric(best_parameters[1])
+    BMT_I <- as.numeric(best_parameters[2])
+    BMT_N <- as.logical(best_parameters[3])
+    BMT_U <- as.logical(best_parameters[4])
+    BMT_M <- as.numeric(best_parameters[5])
+    BMT_R <- as.logical(best_parameters[6])
+  }
+
+
+
+
+
+
+
+
+  if ("RF" %in% methods){
+    # 2 Optimization for RF
+
+    print("Tuning parameters for the RF method...")
+
+    RF_P <- RF_P_vector
+    RF_I <- RF_I_vector
+    RF_depth  <- RF_depth_vector
+
+    hyper_grid <- expand.grid(P = RF_P, I = RF_I, depth = RF_depth)
+
+    # Number of potential models in the grid
+    num_models <- nrow(hyper_grid)
+
+    # Create an empty list to store models
+    grade_models <- list()
+
+    # Write a loop over the rows of hyper_grid to train the grid of models
+    for (i in 1:num_models) {
+
+      # Get minsplit, maxdepth values at row i
+      P <- hyper_grid$P[i]
+      I <- hyper_grid$I[i]
+      depth <- hyper_grid$depth[i]
+
+      # cross_validation
+      foldi <- seq(1:k)
+      foldi <- paste("fold_", foldi)
+
+      #Randomly shuffle the data
+      #dataset <- dataset[sample(nrow(dataset)), ]
+
+      #Create 10 equally size folds
+      folds <- cut(seq(1, nrow(dataset)), breaks = k, labels = FALSE)
+
+      #Perform k fold cross validation
+      tuning_vector <- c()
+
+      for (j in 1:k){
+
+        #Segement your data by fold using the which() function
+        testIndexes <- which(folds == j, arr.ind = TRUE)
+        test <- dataset[testIndexes, ]
+        train <- dataset[-testIndexes, ]
+
+        #MLR MODEL
+        RF <- make_Weka_classifier("weka/classifiers/trees/RandomForest")
+        model_temp <- RF(formula, data = train, control = Weka_control(P = P, I = I,
+                                                                       depth = depth))
+
+        test_observed <- test[, DepIndex]
+        test_predicted <- predict(model_temp, test)
+
+        if (tuning_metric == "RMSE"){
+          tuning_vector[j] <- MLmetrics::RMSE(test_predicted, test_observed)
+        } else if (tuning_metric == "RSquared"){
+          tuning_vector[j] <- cor(test_predicted, test_observed)^2
+        } else {
+          stop(paste0("tuning_metric argument should be RMSE or RSquared! Instead it is ", tuning_metric))
+        }
+
+      }
+
+      grade_models[i] <- mean(tuning_vector)
+
+    }
+
+    grade_list <- unlist(grade_models)
+
+    # Identify the model with smallest validation set RMSE
+    if (tuning_metric == "RMSE"){
+      best_model <- which.min(grade_list)}
+    if (tuning_metric == "RSquared"){
+      best_model <- which.max(grade_list)
+    }
+
+    best_parameters <- hyper_grid[best_model, ]
+
+    RF_P <- as.numeric(best_parameters[1])
+    RF_I <- as.numeric(best_parameters[2])
+    RF_depth <- as.numeric(best_parameters[3])
+  }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ##################################################################################
 ##################################################################################
 ##################################################################################
+print("Evaluation of methods...")
+
 # Normal cross-validation with repeats.
 
 if (blocked_CV == FALSE){
@@ -364,7 +1072,7 @@ if (blocked_CV == FALSE){
 # create progress bar
 pb <- txtProgressBar(min = 0, max = repeats, style = 3)
 
-b = 0 # place holder for saving rezults
+b = 0 # place holder for saving results
 
 for (m in 1:repeats){
 
@@ -401,7 +1109,7 @@ for (j in 1:k){
   list_MLR[[b]] <- calculations
 
   #BRNN Model
-  capture.output(BRNN <- brnn(formula, data = train, BRNN_neurons = BRNN_neurons, verbose = FALSE))
+  capture.output(BRNN <- brnn(formula, data = train, neurons = BRNN_neurons, verbose = FALSE))
   train_predicted <- predict(BRNN, train)
   test_predicted <- predict(BRNN, test)
   calculations <- calculate_metrics(train_predicted, test_predicted,
@@ -410,8 +1118,7 @@ for (j in 1:k){
 
   # Model Trees
   MT_model <- M5P(formula, data = train,
-                  control = Weka_control(M = MT_M, N =  MT_N, U = MT_U,
-                                         R = MT_R))
+                  control = Weka_control(M = MT_M, N =  MT_N, U = MT_U, R = MT_R))
   train_predicted <- predict(MT_model, train)
   test_predicted <- predict(MT_model, test)
   calculations <- calculate_metrics(train_predicted, test_predicted,
@@ -432,9 +1139,11 @@ for (j in 1:k){
   list_BMT[[b]] <- calculations
 
 
-  # Random Forest
-  RF_model <- randomForest(formula = formula, data = train, RF_mtry = RF_mtry,
-                               RF_maxnodes = RF_maxnodes, RF_ntree = RF_ntree)
+  # Random Forest, Regression Tree with random forest, WEKA
+  RF <- make_Weka_classifier("weka/classifiers/trees/RandomForest")
+  RF_model <- RF(formula, data = train, control = Weka_control(P = RF_P, I = RF_I,
+                                          depth = RF_depth))
+
   train_predicted <- predict(RF_model, train)
   test_predicted <- predict(RF_model, test)
   calculations <- calculate_metrics(train_predicted, test_predicted,
@@ -463,7 +1172,7 @@ if (blocked_CV == TRUE){
   # create progress bar
   pb <- txtProgressBar(min = 0, max = k, style = 3)
 
-  b = 0 # place holder for saving rezults
+  b = 0 # place holder for saving results
 
   # Here, idex of dependent variable is extracted and later used to locate the
   # observed values
@@ -494,7 +1203,7 @@ if (blocked_CV == TRUE){
     list_MLR[[b]] <- calculations
 
     #BRNN Model
-    capture.output(BRNN <- brnn(formula, data = train, BRNN_neurons = BRNN_neurons, verbose = FALSE))
+    capture.output(BRNN <- brnn(formula, data = train, neurons = BRNN_neurons, verbose = FALSE))
     train_predicted <- predict(BRNN, train)
     test_predicted <- predict(BRNN, test)
     calculations <- calculate_metrics(train_predicted, test_predicted,
@@ -525,8 +1234,9 @@ if (blocked_CV == TRUE){
     list_BMT[[b]] <- calculations
 
     ##Random Forest
-    RegTree_Weka <- randomForest(formula = formula, data = train, RF_mtry = RF_mtry,
-                                 RF_maxnodes = RF_maxnodes, RF_ntree = RF_ntree)
+    RF <- make_Weka_classifier("weka/classifiers/trees/RandomForest")
+    RegTree_Weka <- RF(formula, data = train, control = Weka_control(P = RF_P, I = RF_I,
+                                                                     depth = RF_depth))
     train_predicted <- predict(RegTree_Weka, train)
     test_predicted <- predict(RegTree_Weka, test)
     calculations <- calculate_metrics(train_predicted, test_predicted,
@@ -800,7 +1510,12 @@ Method <- NULL
 value <- NULL
 pred <- NULL
 method <- NULL
-
+Year <- NULL
+reconstruction <- NULL
+edge_observation <- NULL
+edge_prediction <- NULL
+type <- NULL
+data_edge_central <- NULL
 
 ranks_together$Method <- methods
 ranks_together$Period <- c(rep("cal", length(methods)), rep("val", length(methods)))
@@ -857,7 +1572,7 @@ df_all_avg$Metric <- c("r", "r", "RMSE", "RMSE", "RRSE", "RRSE",
                             "d", "d", "RE", "RE", "CE", "CE")
 row.names(df_all_avg) <- NULL
 
-Rezults_mean_std <- dplyr::select(df_all_avg, Metric, Period, df_all_avg_colnames)
+Results_mean_std <- dplyr::select(df_all_avg, Metric, Period, df_all_avg_colnames)
 
 # Here, we organize the rank and share1 data frame
 
@@ -885,7 +1600,7 @@ for (i in 1:length(temp_string_rank)){
   sp_position <- sp_position + 1
 }
 
-Rezults_ranks <- dplyr::select(ranks, Metric, Period,
+Results_ranks <- dplyr::select(ranks, Metric, Period,
                                as.vector(do.call(cbind, emptly_list)))
 
 ##################################################################
@@ -934,20 +1649,24 @@ bias_together_validation <- dplyr::filter(bias_together, Period == "Validation")
 bias_together_calibration$value <- round(bias_together_calibration$value, round_bias_cal)
 
 gg_object_cal <- ggplot(bias_together_calibration, aes(value)) +
-  geom_density(aes(group = Method)) +
+  geom_histogram(aes(group = Method), bins = n_bins) +
+  # geom_density(aes(group = Method)) +
   geom_vline(xintercept = 0) +
   facet_grid(Method ~ ., scales = "free") +
   theme_bw() +
+  xlab("bias") +
   theme(legend.position = "NONE", legend.title = element_blank(),
         text = element_text(size = 15))
 
 bias_together_validation$value <- round(bias_together_validation$value, round_bias_val)
 
 gg_object_val <- ggplot(bias_together_validation, aes(value)) +
-  geom_density(aes(group = Method)) +
+  geom_histogram(aes(group = Method), bins = n_bins) +
+  # geom_density(aes(group = Method)) +
   geom_vline(xintercept = 0) +
   facet_grid(Method ~ .) +
   theme_bw() +
+  xlab("bias") +
   theme(legend.position = "NONE", legend.title = element_blank(),
         text = element_text(size = 15))
 
@@ -960,7 +1679,12 @@ if (numIND == 1) {
 
   range_max <- max(dataset[,-DepIndex])
   range_min <- min(dataset[,-DepIndex])
-  full_range <- data.frame(c1 = NA, c2 = seq(range_min, range_max, 0.01))
+
+  # I want to increase the range for transfer function, to see greater
+  # difference among transfer functions
+  diff2 <- (range_max - range_min)/4
+
+  full_range <- data.frame(c1 = NA, c2 = seq(range_min - abs(diff2), range_max + abs(diff2), diff2/1000))
   colnames(full_range) <- c(Dep_name, Ind_name)
   #full_range <- select(full_range, colnames(dataset))
 
@@ -988,8 +1712,9 @@ BMT_model <- Bagging(formula,
 predicted_BMT <- data.frame(pred = predict(BMT_model, full_range), method = "BMT")
 
 # Random Forest
-RF_model <- randomForest(formula = formula, data = dataset, RF_mtry = RF_mtry,
-                         RF_maxnodes = RF_maxnodes, RF_ntree = RF_ntree)
+RF <- make_Weka_classifier("weka/classifiers/trees/RandomForest")
+RF_model <- RF(formula = formula, data = dataset,
+               control = Weka_control(P = RF_P, I = RF_I, depth = RF_depth))
 predicted_RF <- data.frame(pred = predict(RF_model, full_range), method = "RF")
 
 # Subset of methods
@@ -1018,7 +1743,7 @@ journal_theme <- theme_bw() +
   theme(axis.text = element_text(size = 16, face = "bold"),
         axis.title = element_text(size = 18), text = element_text(size = 18),
         plot.title = element_text(size = 16,  face = "bold"),
-        legend.position="bottom")
+        legend.position="bottom", legend.title=element_blank())
 
 dataset1 <-dataset
 colnames(dataset1)[DepIndex] <- "pred"
@@ -1034,37 +1759,250 @@ plot_1 <- ggplot(predictions, aes(x = range, y = pred)) + geom_line() +
 
 dataset1$method = NA
 
-plot_2 <- ggplot(predictions, aes(x = range, y = pred, group = method, colour = method)) + geom_line() +
+plot_2 <- ggplot(predictions, aes(x = range, y = pred, group = method, colour = method)) +
+  geom_line(aes(x = range, y = pred, group = method, colour = method, linetype = method), size = 1.05) +
   geom_point(data = dataset1, aes(x = range, y = pred)) +
   xlab("Range of Independent Variable") +
   ylab("Dependent Variable") +
   ggtitle("Transfer Functions Plotted Together") +
   journal_theme
-} else (plot_1 = "transfer functions are not avaliable for regression problems with more than 1 independent variable!")
 
-class_plot_1 <- class(plot_1)[[1]]
-if (class_plot_1 == "character") {
-  plot_2 = "Transfer functions are not avaliable for regression problems with more than 1 independent variable!"
-}
+} else if (numIND == 2){
+
+  modelList = list()
+  plotList = list()
+  plotListNames = methods
+
+  if ("BMT" %in% methods){
+    modelList$BMT = Bagging(formula, dataset, control = Weka_control(P = BMT_P, I = BMT_I,
+                                                                    W = list("weka.classifiers.trees.M5P",
+                                                                             M = BMT_M, N = BMT_N, U = BMT_U, R = BMT_R)))
+  }
+
+  if ("BRNN" %in% methods){
+    modelList$BRNN = brnn(formula, dataset, neurons = BRNN_neurons)
+  }
+
+  if ("MLR" %in% methods){
+    modelList$MLR = lm(formula, dataset)
+  }
+
+  if ("MT" %in% methods){
+    modelList$MT = M5P(formula, dataset, control = Weka_control(M = MT_M, N = MT_N, U = MT_U, R = MT_R))
+  }
+
+  if ("RF" %in% methods){
+    RF = make_Weka_classifier("weka/classifiers/trees/RandomForest")
+    modelList$RF = RF(formula, dataset, control = Weka_control(P = RF_P, I = RF_I, depth = RF_depth))
+  }
+
+  for (i in 1:length(modelList)){
+
+    model = modelList[[i]]
+
+    x1 = dataset[[indep_name_1]]
+    x2 = dataset[[indep_name_2]]
+    y = dataset[[DepName]]
+
+    grd <- data.frame(X1 = seq(range(x1)[1],range(x1)[2],len=40),
+                      X2 = seq(range(x2)[1],range(x2)[2],len=40))
+
+    names(grd) <- c(indep_names)
+    grd$pred <- predict(model, newdata=grd)
+    grd <- grd[order(grd[[indep_name_1]],grd[[indep_name_2]]),]
+
+
+    x1 <- unique(grd[[indep_name_1]])
+    x2 <- unique(grd[[indep_name_2]])   # shouldn't have used y
+    z=matrix(grd$pred,length(x1),length(x2))
+
+    color_workaround <- rep(0,length(grd$pred))
+    dim(color_workaround) <- dim(grd$pred)
+
+    thisName = plotListNames[i]
+    plotList[[thisName]] = plot_ly(x = x1, y = x2, z = ~z, name =thisName,
+                                   scene = paste0('scene',i)) %>%
+      add_surface(opacity = 0.5,  showscale=FALSE, hoverinfo = "name", surfacecolor=color_workaround,
+                  hoverlabel = list(color = "black")) %>%
+      layout(scene = list(xaxis = list(title = indep_name_1),
+                          yaxis = list(title = indep_name_2),
+                          zaxis = list(title = DepName))) %>%
+      add_trace(x = dataset[[indep_name_1]], y = dataset[[indep_name_2]], z = dataset[[DepName]],   mode = "markers", type = "scatter3d",
+                marker = list(size = 5, color = "red", symbol = 104), hoverinfo = "name",
+                hoverlabel = list(color = "black")) %>%
+      #add_annotations(x = 0.5, y = 0.8, text = paste(plotListNames[i]), showarrow = FALSE) %>%
+      layout(showlegend = FALSE) %>% plotly_build()
+
+  }
+
+  if (length (plotList) == 1){
+    plot_1 <- subplot(plotList)%>%
+      layout(scene = list(aspectmode='cube',
+                          yaxis = list(title = indep_name_2),
+                          xaxis = list(title = indep_name_1),
+                          zaxis = list(title = DepName)))
+  }
+
+  if (length (plotList) == 2){
+    plot_1 <- subplot(plotList)%>%
+      layout(scene = list(domain=list(x=c(0,0.5),y=c(0,1)),
+                          aspectmode='cube',
+                          yaxis = list(title = indep_name_2),
+                          xaxis = list(title = indep_name_1),
+                          zaxis = list(title = DepName)),
+             scene2 = list(domain=list(x=c(0.5,1),y=c(0,1)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName)))
+  }
+
+  if (length (plotList) == 3){
+    plot_1 <- subplot(plotList)%>%
+      layout(scene = list(domain=list(x=c(0,0.5),y=c(0.5,1)),
+                          aspectmode='cube',
+                          yaxis = list(title = indep_name_2),
+                          xaxis = list(title = indep_name_1),
+                          zaxis = list(title = DepName)),
+             scene2 = list(domain=list(x=c(0.5,1),y=c(0.5,1)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName)),
+             scene3 = list(domain=list(x=c(0,0.5),y=c(0,0.5)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName)))
+  }
+
+  if (length (plotList) == 4){
+    plot_1 <- subplot(plotList)%>%
+      layout(scene = list(domain=list(x=c(0,0.5),y=c(0.5,1)),
+                          aspectmode='cube',
+                          yaxis = list(title = indep_name_2),
+                          xaxis = list(title = indep_name_1),
+                          zaxis = list(title = DepName)),
+             scene2 = list(domain=list(x=c(0.5,1),y=c(0.5,1)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName)),
+             scene3 = list(domain=list(x=c(0,0.5),y=c(0,0.5)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName)),
+             scene4 = list(domain=list(x=c(0.5,1),y=c(0,0.5)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName)))
+  }
+
+  if (length (plotList) == 5){
+    plot_1 <- subplot(plotList)%>%
+      layout(scene = list(domain=list(x=c(0,0.33),y=c(0.5,1)),
+                          aspectmode='cube',
+                          yaxis = list(title = indep_name_2),
+                          xaxis = list(title = indep_name_1),
+                          zaxis = list(title = DepName)),
+             scene2 = list(domain=list(x=c(0.33,0.66),y=c(0.5,1)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName)),
+             scene3 = list(domain=list(x=c(0.66,1),y=c(0.5,1)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName)),
+             scene4 = list(domain=list(x=c(0,0.33),y=c(0,0.5)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName)),
+             scene5 = list(domain=list(x=c(0.33,0.66),y=c(0,0.5)),
+                           aspectmode='cube',
+                           yaxis = list(title = indep_name_2),
+                           xaxis = list(title = indep_name_1),
+                           zaxis = list(title = DepName))
+             )
+  }
+
+
+
+  for (i in 1:length(modelList)){
+
+    model = modelList[[i]]
+
+    x1 = dataset[[indep_name_1]]
+    x2 = dataset[[indep_name_2]]
+    y = dataset[[DepName]]
+
+    grd <- data.frame(X1 = seq(range(x1)[1],range(x1)[2],len=40),
+                      X2 = seq(range(x2)[1],range(x2)[2],len=40))
+
+    names(grd) <- c(indep_names)
+    grd$pred <- predict(model, newdata=grd)
+    grd <- grd[order(grd[[indep_name_1]],grd[[indep_name_2]]),]
+
+
+    x1 <- unique(grd[[indep_name_1]])
+    x2 <- unique(grd[[indep_name_2]])   # shouldn't have used y
+    z <- matrix(grd$pred,length(x1),length(x2))
+
+    color_workaround <- rep(i,length(grd$pred))
+    dim(color_workaround) <- dim(grd$pred)
+
+    color_vector = c("red", "blue", "green", "orange", "brown")
+
+    thisName = plotListNames[i]
+
+    z1 <- list()
+    z1[[1]] <- z
+    names(z1) <- thisName
+
+
+    plotList[[thisName]] = plot_ly(x = x1, y = x2, z = ~z1[[1]], name = thisName,
+                                   scene = 'scene') %>%
+      add_surface(opacity = 0.5, hoverinfo = "name", surfacecolor = color_workaround, colors = color_vector[i],
+                  colorbar =list(title=methods[i], dtick = "tick0", tickvals = c()),
+                  hoverlabel = list(color = "black")) %>%
+      layout(scene = list(xaxis = list(title = indep_name_1),
+                          yaxis = list(title = indep_name_2),
+                          zaxis = list(title = DepName))) %>%
+      add_trace(x = dataset[[indep_name_1]], y = dataset[[indep_name_2]], z = dataset[[DepName]],   mode = "markers", type = "scatter3d",
+                marker = list(size = 5, color= "red", symbol = 104), hoverinfo = "none",
+                hoverlabel = list(color = "black")) %>%
+      layout(showlegend = FALSE) %>% plotly_build()
+
+  }
+
+
+  plot_2 <- subplot(plotList)%>%
+    layout(scene = list(aspectmode='cube',
+                        yaxis = list(title = indep_name_2),
+                        xaxis = list(title = indep_name_1),
+                        zaxis = list(title = DepName)))
+
+
+
+
+
+  } else {
+
+  plot_1 <- "transfer functions are not avaliable for regression problems with more than 2 independent variables!"
+  plot_2 <- "Transfer functions are not avaliable for regression problems with more than 2 independent variables!"
+
+  }
+
+
 
 ##### Here both data frames are subset with round_df function #############
 
-Rezults_mean_std <- round_df(Rezults_mean_std, digits = digits)
-Rezults_ranks <- round_df(Rezults_ranks, digits = digits)
-
-# Here, Calibration Validation subset is
-a <- 0
-b <- 0
-
-if ("Calibration" %in% returns){
-  a <- 1
-}
-
-if ("Validation" %in% returns){
-  b <- 3
-}
-
-c <- a + b
+Results_mean_std <- round_df(Results_mean_std, digits = digits)
+Results_ranks <- round_df(Results_ranks, digits = digits)
 
 # Here, all optimized parameters are saved in a data frame, which will be saved as
 # a fifth elemnt of the final_list
@@ -1072,7 +2010,7 @@ parameters <- data.frame(
   Method = c("BRNN", "MT", "MT", "MT", "MT", "BMT", "BMT", "BMT", "BMT", "BMT", "BMT",
              "RF", "RF", "RF"),
   Parameter = c("BRNN_neurons", "MT_M", "MT_N", "MT_U", "MT_R", "BMT_P", "BMT_I", "BMT_M",
-                "BMT_N", "BMT_U", "BMT_R", "RF_mtry", "RF_maxnodes", "RF_ntree"),
+                "BMT_N", "BMT_U", "BMT_R", "RF_P", "RF_I", "RF_depth"),
   Value = c(BRNN_neurons, MT_M,
             ifelse(MT_N == 1, as.character("TRUE"), as.character("FALSE")),
             ifelse(MT_U == 1, as.character("TRUE"), as.character("FALSE")),
@@ -1080,39 +2018,291 @@ parameters <- data.frame(
             ifelse(BMT_N == 1, as.character("TRUE"), as.character("FALSE")),
             ifelse(BMT_U == 1, as.character("TRUE"), as.character("FALSE")),
             ifelse(BMT_R == 1, as.character("TRUE"), as.character("FALSE")),
-            RF_mtry, RF_maxnodes, RF_ntree))
+            RF_P, RF_I, RF_depth))
 
 parameters <- parameters[parameters$Method %in% methods,]
 
+                 ############################################################
+                 # The reconstruction of climate based on all methods used  #
+                 ############################################################
+if (is.null(dataset_complete) == FALSE){
+MLR_model <- lm(formula, data = dataset)
+reconstruction_MLR <- data.frame(reconstruction = predict(MLR_model, dataset_complete), method = "MLR")
+
+#BRNN Model
+capture.output(BRNN_model <- brnn(formula, data = dataset, BRNN_neurons = BRNN_neurons, verbose = FALSE))
+reconstruction_BRNN <- data.frame(reconstruction = predict(BRNN_model, dataset_complete), method = "BRNN")
+
+# Model Trees
+MT_model <- M5P(formula, data = dataset,
+                control = Weka_control(M = MT_M, N =  MT_N, U = MT_U,
+                                       R = MT_R))
+reconstruction_MT <- data.frame(reconstruction = predict(MT_model, dataset_complete), method = "MT")
+
+
+#M5 Model with bagging
+BMT_model <- Bagging(formula,
+                     data = dataset,
+                     control = Weka_control(P = BMT_P, I = BMT_I,
+                                            W = list("weka.classifiers.trees.M5P",
+                                                     M = BMT_M, N = BMT_N,
+                                                     U = BMT_U, R = BMT_R)))
+reconstruction_BMT <- data.frame(reconstruction = predict(BMT_model, dataset_complete), method = "BMT")
+
+# Random Forest
+RF <- make_Weka_classifier("weka/classifiers/trees/RandomForest")
+RF_model <- RF(formula = formula, data = dataset,
+               control = Weka_control(P = RF_P, I = RF_I, depth = RF_depth))
+reconstruction_RF <- data.frame(reconstruction = predict(RF_model, dataset_complete), method = "RF")
+
+
+
+# Subset of methods
+start_position = 0
+method_list <- list()
+for (i in methods){
+  start_position <- start_position + 1
+  method_list[[start_position]] <- paste0("reconstruction_",i)
+}
+
+method_vector <- unlist(method_list, use.names = FALSE)
+
+empty_LIST <- list()
+
+for (i in 1:length(method_vector)){
+  temp_DF <- get(method_vector[i])
+  empty_LIST[[i]] <- temp_DF
+}
+
+names(empty_LIST) <- method_vector
+reconstructions <- do.call(rbind, empty_LIST)
+reconstructions$Year = as.numeric(row.names(dataset_complete))
+
+# Add plots
+plot_3 <- ggplot(reconstructions, aes(x = Year, y = reconstruction, group = method, colour = method)) +
+  geom_line() +
+  ylab("Reconstruction") +
+  ggtitle("Reconstruction of dependent variable") +
+  journal_theme
+
+plot_4 <- ggplot(reconstructions, aes(x = Year, y = reconstruction, group = method)) +
+  geom_line() +
+  ylab("Reconstruction") +
+  ggtitle("Reconstruction of dependent variable") +
+  facet_wrap(~method, ncol = 1) +
+  journal_theme +
+  theme(legend.position = 'none')
+} else {
+  plot_3 <- "The dataset full argument is not supplied, therefore reconstrucions are not calculated."
+  plot_4 <- "The dataset full argument is not supplied, therefore reconstrucions are not calculated."
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############################################################
+#   The comparison of methods, only the edge instances     #
+############################################################
+# Here, I extract the "edge data", I calibrate models using the central part of the data and
+# afterwards use it on the edge data to see, how methods perform in modeling
+if (numIND == 1) {
+edge_factor <- round(nrow(dataset)*(edge_share/2),1)
+
+dataset_max <- dplyr::arrange(dataset, desc(dataset[, -DepIndex]))[1:edge_factor,]
+dataset_min <- dplyr::arrange(dataset, desc(dataset[, -DepIndex]))[(nrow(dataset)-edge_factor+1):nrow(dataset),]
+dataset_edges <- rbind(dataset_max, dataset_min)
+dataset_central <- dplyr::arrange(dataset, desc(dataset[, -DepIndex]))[(edge_factor+1):(nrow(dataset)-edge_factor),]
+
+
+
+  MLR_model <- lm(formula, data = dataset_central)
+  edge_prediction <- data.frame(value = predict(MLR_model, dataset_edges), data_edge_central = "edge", type = "predicted", method = "MLR")
+  central_prediction <- data.frame(value = predict(MLR_model, dataset_central), data_edge_central = "central", type = "predicted", method = "MLR")
+  edge_observed <- data.frame(value = dataset_edges[, DepIndex], data_edge_central = "edge", type = "observed", method = "MLR")
+  central_observed <- data.frame(value = dataset_central[, DepIndex], data_edge_central = "central", type = "observed", method = "MLR")
+  MLR_central_edge <- rbind(edge_prediction, central_prediction, edge_observed, central_observed)
+
+
+    #BRNN Model
+  capture.output(BRNN_model <- brnn(formula, data = dataset_central, BRNN_neurons = BRNN_neurons, verbose = FALSE))
+  edge_prediction <- data.frame(value = predict(BRNN_model, dataset_edges), data_edge_central = "edge", type = "predicted", method = "BRNN")
+  central_prediction <- data.frame(value = predict(BRNN_model, dataset_central), data_edge_central = "central", type = "predicted", method = "BRNN")
+  edge_observed <- data.frame(value = dataset_edges[, DepIndex], data_edge_central = "edge", type = "observed", method = "BRNN")
+  central_observed <- data.frame(value = dataset_central[, DepIndex], data_edge_central = "central", type = "observed", method = "BRNN")
+  BRNN_central_edge <- rbind(edge_prediction, central_prediction, edge_observed, central_observed)
+
+  # Model Trees
+  MT_model <- M5P(formula, data = dataset_central,
+                  control = Weka_control(M = MT_M, N =  MT_N, U = MT_U, R = MT_R))
+  edge_prediction <- data.frame(value = predict(MT_model, dataset_edges), data_edge_central = "edge", type = "predicted", method = "MT")
+  central_prediction <- data.frame(value = predict(MT_model, dataset_central), data_edge_central = "central", type = "predicted", method = "MT")
+  edge_observed <- data.frame(value = dataset_edges[, DepIndex], data_edge_central = "edge", type = "observed", method = "MT")
+  central_observed <- data.frame(value = dataset_central[, DepIndex], data_edge_central = "central", type = "observed", method = "MT")
+  MT_central_edge <- rbind(edge_prediction, central_prediction, edge_observed, central_observed)
+
+  #M5 Model with bagging
+  BMT_model <- Bagging(formula,
+                       data = dataset_central,
+                       control = Weka_control(P = BMT_P, I = BMT_I,
+                                              W = list("weka.classifiers.trees.M5P",
+                                                       M = BMT_M, N = BMT_N,
+                                                       U = BMT_U, R = BMT_R)))
+  edge_prediction <- data.frame(value = predict(BMT_model, dataset_edges), data_edge_central = "edge", type = "predicted", method = "BMT")
+  central_prediction <- data.frame(value = predict(BMT_model, dataset_central), data_edge_central = "central", type = "predicted", method = "BMT")
+  edge_observed <- data.frame(value = dataset_edges[, DepIndex], data_edge_central = "edge", type = "observed", method = "BMT")
+  central_observed <- data.frame(value = dataset_central[, DepIndex], data_edge_central = "central", type = "observed", method = "BMT")
+  BMT_central_edge <- rbind(edge_prediction, central_prediction, edge_observed, central_observed)
+
+  # Random Forest
+  RF <- make_Weka_classifier("weka/classifiers/trees/RandomForest")
+  RF_model <- RF(formula = formula, data = dataset_central,
+                 control = Weka_control(P = RF_P, I = RF_I, depth = RF_depth))
+  edge_prediction <- data.frame(value = predict(RF_model, dataset_edges), data_edge_central = "edge", type = "predicted", method = "RF")
+  central_prediction <- data.frame(value = predict(RF_model, dataset_central), data_edge_central = "central", type = "predicted", method = "RF")
+  edge_observed <- data.frame(value = dataset_edges[, DepIndex], data_edge_central = "edge", type = "observed", method = "RF")
+  central_observed <- data.frame(value = dataset_central[, DepIndex], data_edge_central = "central", type = "observed", method = "RF")
+  RF_central_edge <- rbind(edge_prediction, central_prediction, edge_observed, central_observed)
+
+  edge_central_data <- rbind(MLR_central_edge,
+                             BRNN_central_edge,
+                             MT_central_edge,
+                             BMT_central_edge,
+                             RF_central_edge)
+
+  edge_central_data <- dplyr::filter(edge_central_data, method %in% methods)
+
+  edge_results <- edge_central_data %>%
+                    group_by(method) %>%
+                    summarise(r_central = cor(value[data_edge_central == "central" & type == "predicted"],
+                                          value[data_edge_central == "central" & type == "observed"]),
+                             r_edge = cor(value[data_edge_central == "edge" & type == "predicted"],
+                                      value[data_edge_central == "edge" & type == "observed"]),
+
+                             RMSE_central = MLmetrics::RMSE(value[data_edge_central == "central" & type == "predicted"],
+                                                            value[data_edge_central == "central" & type == "observed"]),
+                             RMSE_edge =  MLmetrics::RMSE(value[data_edge_central == "edge" & type == "predicted"],
+                                                           value[data_edge_central == "edge" & type == "observed"]),
+
+                             RRSE_central = MLmetrics::RRSE(value[data_edge_central == "central" & type == "predicted"],
+                                                            value[data_edge_central == "central" & type == "observed"]),
+                             RRSE_edge = MLmetrics::RRSE(value[data_edge_central == "edge" & type == "predicted"],
+                                                           value[data_edge_central == "edge" & type == "observed"]),
+
+                             d_central  = 1 - (sum((value[data_edge_central == "central" & type == "observed"] -
+                                                      value[data_edge_central == "central" & type == "predicted"]) ^ 2)) /
+                               sum((abs(value[data_edge_central == "central" & type == "predicted"] -
+                                          mean(value[data_edge_central == "central" & type == "observed"])) +
+                                      abs(value[data_edge_central == "central" & type == "observed"] -
+                                            mean(value[data_edge_central == "central" & type == "observed"]))) ^ 2),
+                             d_edge = 1 - (sum((value[data_edge_central == "edge" & type == "observed"] -
+                                                   value[data_edge_central == "edge" & type == "predicted"]) ^ 2)) /
+                                sum((abs(value[data_edge_central == "edge" & type == "predicted"] -
+                                           mean(value[data_edge_central == "edge" & type == "observed"])) +
+                                       abs(value[data_edge_central == "edge" & type == "observed"] -
+                                             mean(value[data_edge_central == "edge" & type == "observed"]))) ^ 2),
+
+                             RE_central = 1 - (sum((value[data_edge_central == "central" & type == "observed"] -
+                                                      value[data_edge_central == "central" & type == "predicted"]) ^ 2) /
+                                                 sum((value[data_edge_central == "central" & type == "observed"] -
+                                                        mean(value[data_edge_central == "edge" & type == "observed"])) ^ 2)),
+                             RE_edge = 1 - (sum((value[data_edge_central == "edge" & type == "observed"] -
+                                                    value[data_edge_central == "edge" & type == "predicted"]) ^ 2) /
+                                             sum((value[data_edge_central == "edge" & type == "observed"] -
+                                                    mean(value[data_edge_central == "central" & type == "observed"])) ^ 2)),
+
+                             CE_central  = 1 - (sum((value[data_edge_central == "central" & type == "observed"] -
+                                                       value[data_edge_central == "central" & type == "predicted"]) ^ 2) /
+                                                  sum((value[data_edge_central == "central" & type == "observed"] -
+                                                         mean(value[data_edge_central == "central" & type == "observed"])) ^ 2)),
+                              CE_edge  = 1 - (sum((value[data_edge_central == "edge" & type == "observed"] -
+                                                     value[data_edge_central == "edge" & type == "predicted"]) ^ 2) /
+                                                sum((value[data_edge_central == "edge" & type == "observed"] -
+                                                       mean(value[data_edge_central == "edge" & type == "observed"])) ^ 2))
+
+                              )
+
+
+
+# test_observed: value[data_edge_central == "edge" & type == "observed"]
+# test_predicted: value[data_edge_central == "edge" & type == "predicted"]
+# train_observed: value[data_edge_central == "central" & type == "observed"]
+# train_predicted: value[data_edge_central == "central" & type == "predicted"]
+
+
+
+  edge_results_t <- t(edge_results[,-1])
+  colnames(edge_results_t) <- edge_results$method
+  edge_results_t <- round(edge_results_t, digits)
+  edge_results_t <- data.frame(edge_results_t, Period =  c("cal_central", "val_edge"),
+                               Metric = c("r", "r", "RMSE", "RMSE", "RRSE", "RRSE",
+                             "d", "d", "RE", "RE", "CE", "CE"))
+  edge_results_t <- select(edge_results_t, Metric, Period, methods)
+  row.names(edge_results_t) <- NULL
+
+
+} else {
+  edge_results_t <- "No edge experiment is performed for regression problems with more than 2 independent variables."
+}
+
+
+
+
+  #####################################################################
+
 # If Calibration and Validation data should be returned, then this is our final results
-if (c == 4){
-  final_list <- list(mean_std = Rezults_mean_std, ranks = Rezults_ranks, bias_cal = gg_object_cal,
-                     bias_val = gg_object_val, transfer_functions = plot_1,
-                     transfer_functions_together = plot_2, parameter_values = parameters,
-                     PCA_output = PCA_result)
-}
+  final_list <- list(mean_std = Results_mean_std, ranks = Results_ranks,
+                     edge_results = edge_results_t,
+                     bias_cal = suppressMessages(gg_object_cal),
+                     bias_val = suppressMessages(gg_object_val),
+                     transfer_functions = plot_1,
+                     transfer_functions_together = plot_2,
+                     parameter_values = parameters,
+                     PCA_output = PCA_result,
+                     reconstructions = plot_4,
+                     reconstructions_together = plot_3)
 
-if (c == 1){
-  Rezults_mean_std <- dplyr::filter(Rezults_mean_std, Period == "cal")
-  Rezults_ranks <- dplyr::filter(Rezults_ranks, Period == "cal")
-  final_list <- list(mean_std = Rezults_mean_std, ranks = Rezults_ranks, bias_cal = gg_object_cal,
-                     bias_val = gg_object_val, transfer_functions = plot_1,
-                     transfer_functions_together = plot_2, parameter_values = parameters,
-                     PCA_output = PCA_result)
-}
-
-if (c == 3){
-  Rezults_mean_std <- dplyr::filter(Rezults_mean_std, Period == "val")
-  Rezults_ranks <- dplyr::filter(Rezults_ranks, Period == "val")
-  final_list <- list(mean_std = Rezults_mean_std, ranks = Rezults_ranks,
-                     bias_val = gg_object_val, transfer_functions = plot_1,
-                     transfer_functions_together = plot_2, parameter_values = parameters,
-                     PCA_output = PCA_result)
-}
-
-
-# Return the final list
-
-final_list
+return(final_list) # Return the final list
 
 }
