@@ -12,7 +12,8 @@ compare_methods(formula, dataset, k = 10, repeats = 2, optimize = TRUE,
   PCA_transformation = FALSE, log_preprocess = TRUE,
   components_selection = "automatic", eigenvalues_threshold = 1,
   N_components = 2, round_bias_cal = 15, round_bias_val = 4,
-  n_bins = 30, edge_share = 0.1, methods = c("MLR", "BRNN", "MT", "BMT",
+  n_bins = 30, edge_share = 0.1, MLR_stepwise = FALSE,
+  stepwise_direction = "backward", methods = c("MLR", "BRNN", "MT", "BMT",
   "RF"), tuning_metric = "RMSE", BRNN_neurons_vector = c(1, 2, 3),
   MT_M_vector = c(4, 8, 16, 25), MT_N_vector = c(TRUE, FALSE),
   MT_U_vector = c(TRUE, FALSE), MT_R_vector = c(FALSE),
@@ -112,6 +113,12 @@ This argument could be between 0.10 and 0.50. If the argument is set to 0.10, th
 the 5 % of the maximal extreme values and 5 % of the minimal extreme values are
 considered to be the edge data.}
 
+\item{MLR_stepwise}{if set to TRUE, stepwise selection of predictors will be used
+for the MLR method}
+
+\item{stepwise_direction}{the mode of stepwise search, can be one of "both",
+"backward", or "forward", with a default of "backward".}
+
 \item{methods}{a vector of strings related to methods that will be compared. A full
 method vector is methods = c("MLR", "BRNN", "MT", "BMT", "RF").
 To use only a subset of methods, pass a vector of methods that you would like to compare.}
@@ -153,7 +160,7 @@ a list with ten elements:
 \tabular{rll}{
  1 \tab $mean_std   \tab data frame with calculated metrics for the selected regression methods. For each regression method and each calculated metric, mean and standard deviation are given\cr
  2 \tab $ranks \tab data frame with ranks of calculated metrics: mean rank and  share of rank_1 are given \cr
- 3 \tab $edge_results   \tab data frame with calculated performance metrics for the central-edge test. The central part of the data represents the calibration data, while the edge data, i.e. extreme values, represent the edge data. Different regression models are calibrated using the central data and validated for the edge (extreme) data. This test is particularly important to assess the performance of models for the prediction of the extreme data. The share of the edge (extreme) data is defined with the edge_share argument \cr
+ 3 \tab $edge_results   \tab data frame with calculated performance metrics for the central-edge test. The central part of the data represents the calibration data, while the edge data, i.e. extreme values, represent the test/validation data. Different regression models are calibrated using the central data and validated for the edge (extreme) data. This test is particularly important to assess the performance of models for the predictions of the extreme data. The share of the edge (extreme) data is defined with the edge_share argument \cr
  4 \tab $bias_cal   \tab ggplot object of mean bias for calibration data \cr
  5 \tab $bias_val    \tab ggplot object of mean bias for validation data \cr
  6 \tab $transfer_functions   \tab ggplot or plotly object with transfer functions of methods \cr
@@ -209,7 +216,7 @@ experiment_2$PCA_output
 experiment_3 <- compare_methods(formula = MVA ~ .,
 dataset = example_dataset_1, k = 2, repeats = 5,
 methods = c("MLR", "BRNN", "MT", "BMT"),
-optimize = TRUE)
+optimize = TRUE, MLR_stepwise = TRUE)
 experiment_3$mean_std
 experiment_3$ranks
 experiment_3$bias_val
@@ -222,7 +229,8 @@ library(ggplot2)
 data(dataset_TRW)
 comparison_TRW <- compare_methods(formula = T_Jun_Jul ~ TRW, dataset = dataset_TRW,
 k = 3, repeats = 10, optimize = TRUE, methods = c("MLR", "MT", "BMT", "BRNN"),
-seed_factor = 5, dataset_complete = dataset_TRW_complete)
+seed_factor = 5, dataset_complete = dataset_TRW_complete, MLR_stepwise = TRUE,
+stepwise_direction = "backward")
 comparison_TRW$mean_std
 comparison_TRW$bias_val
 comparison_TRW$transfer_functions + xlab(expression(paste('TRW'))) +

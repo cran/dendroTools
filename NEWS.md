@@ -1,11 +1,5 @@
-# dendroTools 0.0.7.
+# dendroTools 0.0.8.
 
-* For regression problems with two independent variables, there are transfer functions available now. Transfer functions are given as 3D surface plots based on the plotly R package. 
-* There is a new vignette created for the compare_methods() description
-* For the optimization phase, you can now choose between RMSE and RSquared metrics for final model selection
-* All tuning parameters have new arguments, which allows users to specify a vector of possible values to be tested in the optimization process. 
-* caret package was removed from dependencies, since we implemented our own optimization functions
-* Random forest model from the randomForest package was replaced with random forest model from the RWeka package 
-* The returns argument from the compare_methods() was removed
-* For the compare_methods(), the bias distribution plots were changed from density plots to histograms
-* Package version is changed to 0.0.7
+* New argument is implemented in the compare_methods(), MLR_stepwise. This argument allows to use a stepwise selection of predictors while comparing different regression methods
+* A small bug in daily_response() was removed, as reported by prof. Ionel Popa
+* Package version is changed to 0.0.8
