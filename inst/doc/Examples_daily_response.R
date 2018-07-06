@@ -13,7 +13,7 @@ example_fixed_width <- daily_response(response = data_MVA, env_data = LJ_daily_t
                                    alpha = 0.05)
 
 
-## ---- fig.align='center', fig.width=7, fig.height=5, fig.cap=paste("Figure 1: The MVA parameter contains the optimal temperature signal from March 14 (DOY 73) to May 12 (DOY 132).")----
+## ---- fig.align='center', fig.width=8, fig.height=5, fig.cap=paste("Figure 1: The MVA parameter contains the optimal temperature signal from March 14 (DOY 73) to May 12 (DOY 132).")----
 example_fixed_width$plot_extreme
 
 ## ---- results = 'hide'---------------------------------------------------
@@ -26,27 +26,27 @@ data(LJ_daily_temperatures)
 
 # Example for past and present
 example_MVA_past <- daily_response(response = data_MVA, env_data = LJ_daily_temperatures,
-                              method = "cor", lower_limit = 30, upper_limit = 70,
+                              method = "cor", lower_limit = 50, upper_limit = 70,
                               row_names_subset = TRUE, previous_year = TRUE,
                               remove_insignificant = TRUE, alpha = 0.05, 
                               plot_specific_window = 60, subset_years = c(1940, 1980))
 
 example_MVA_present <- daily_response(response = data_MVA, env_data = LJ_daily_temperatures,
-                                   method = "cor", lower_limit = 30, upper_limit = 70,
+                                   method = "cor", lower_limit = 50, upper_limit = 70,
                                    row_names_subset = TRUE, previous_year = TRUE,
                                    remove_insignificant = TRUE, alpha = 0.05, 
                                    plot_specific_window = 60, subset_years = c(1981, 2010))
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 2: The temporal correlations pattern for the past")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 2: The temporal correlations pattern for the past")----
 example_MVA_past$plot_heatmap
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 3: The temporal correlations pattern for the present")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 3: The temporal correlations pattern for the present")----
 example_MVA_present$plot_heatmap
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 4: The temporal correlations for pre-defined window of 60 days for past years")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 4: The temporal correlations for pre-defined window of 60 days for past years")----
 example_MVA_past$plot_specific
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 5: The temporal correlations for pre-defined window of 60 days for present years")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 5: The temporal correlations for pre-defined window of 60 days for present years")----
 example_MVA_present$plot_specific
 
 ## ---- results = 'hide'---------------------------------------------------
@@ -60,7 +60,7 @@ data(LJ_daily_temperatures)
 # Example PCA
 example_PCA <- daily_response(response = example_proxies_individual, 
                               env_data = LJ_daily_temperatures, method = "lm", 
-                              lower_limit = 30, upper_limit = 70,
+                              lower_limit = 60, upper_limit = 70,
                               row_names_subset = TRUE, remove_insignificant = TRUE,
                               alpha = 0.01, PCA_transformation = TRUE,
                               components_selection = "manual", N_components = 2)
@@ -69,7 +69,7 @@ example_PCA <- daily_response(response = example_proxies_individual,
 # Get the summary statistics for the PCA
 summary(example_PCA$PCA_output)
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 6: The temporal pattern for the r.squared. The highest coefficients of determination were calculated for DOY around 90 with span of 2 months.")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 6: The temporal pattern for the r.squared. The highest coefficients of determination were calculated for DOY around 90 with span of 2 months.")----
 example_PCA$plot_heatmap
 
 ## ---- results = 'hide'---------------------------------------------------
@@ -83,14 +83,14 @@ data(LJ_daily_temperatures)
 # Example negative correlations
 data(data_TRW_1)
 example_neg_cor <- daily_response(response = data_TRW_1, env_data = LJ_daily_temperatures,
-                              method = "cor", lower_limit = 30, upper_limit = 70,
+                              method = "cor", lower_limit = 50, upper_limit = 70,
                               row_names_subset = TRUE, remove_insignificant = TRUE,
                               alpha = 0.05)
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 7: The temporal pattern of correlation coefficients.")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 7: The temporal pattern of correlation coefficients.")----
 example_neg_cor$plot_heatmap
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 8: The highest calculated correlation coefficient.")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 8: The highest calculated correlation coefficient.")----
 example_neg_cor$plot_extreme
 
 ## ------------------------------------------------------------------------
@@ -108,26 +108,26 @@ data(KRE_daily_temperatures)
 example_reconstruction_lin <- daily_response(response = data_TRW, 
                                              env_data = KRE_daily_temperatures, 
                                              method = "lm", metric = "r.squared", 
-                                             lower_limit = 30, upper_limit = 70,
+                                             lower_limit = 30, upper_limit = 40,
                                              row_names_subset = TRUE, 
                                              temporal_stability_check = "progressive",
                                              cross_validation_type = "randomized", k = 3)
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 9: The highest calculated coefficient of determination.")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 9: The highest calculated coefficient of determination.")----
 example_reconstruction_lin$plot_extreme
 
 ## ------------------------------------------------------------------------
 example_reconstruction_lin$temporal_stability
 example_reconstruction_lin$cross_validation
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 10: Linear transfer function")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 10: Linear transfer function")----
 example_reconstruction_lin$transfer_function
 
 ## ------------------------------------------------------------------------
 linear_model <- lm(Optimized_return ~ TRW, data = example_reconstruction_lin$optimized_return)
 reconstruction <- data.frame(predictions = predict(linear_model, newdata = data_TRW))
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 11: The reconstructed average temperature May 15 - June 27 with linear model")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 11: The reconstructed average temperature May 15 - June 27 with linear model")----
 plot(row.names(data_TRW), reconstruction$predictions, type = "l", xlab = "Year", ylab = "Mean temperature May 15 - Jun 27 [ºC]")
 
 ## ---- results = 'hide'---------------------------------------------------
@@ -142,27 +142,27 @@ data(KRE_daily_temperatures)
 example_reconstruction_brnn <- daily_response(response = data_TRW, 
                                               env_data = KRE_daily_temperatures, 
                                               method = "brnn", metric = "r.squared", 
-                                              lower_limit = 40, upper_limit = 45,
+                                              lower_limit = 43, upper_limit = 44,
                                               row_names_subset = TRUE, 
                                               temporal_stability_check = "progressive",
                                               cross_validation_type = "randomized", k = 3)
 
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 12: The highest calculated coefficient of determination for the brnn model.")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 12: The highest calculated coefficient of determination for the brnn model.")----
 example_reconstruction_brnn$plot_extreme
 
 ## ------------------------------------------------------------------------
 example_reconstruction_brnn$temporal_stability
 example_reconstruction_brnn$cross_validation
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 13: Nonlinear brnn transfer function")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 13: Nonlinear brnn transfer function")----
 example_reconstruction_brnn$transfer_function
 
 ## ------------------------------------------------------------------------
 brnn_model <- brnn(Optimized_return ~ TRW, data = example_reconstruction_brnn$optimized_return)
 reconstruction <- data.frame(predictions = predict(brnn_model, newdata = data_TRW))
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 14: The reconstructed average temperature May 15 - June 27 with the nonlinear brnn model")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 14: The reconstructed average temperature May 15 - June 27 with the nonlinear brnn model")----
 plot(row.names(data_TRW),reconstruction$predictions, type = "l", xlab = "Year",
      ylab = "Mean temperature May 15 - Jun 27 [ºC]")
 
@@ -177,22 +177,23 @@ data(LJ_daily_precipitation)
 
 # Example with precipitation and temperatures
 example_MVA_TEMP <- daily_response(response = data_MVA, env_data = LJ_daily_temperatures,
-                                   method = "cor", lower_limit = 30, upper_limit = 70,
+                                   method = "cor", lower_limit = 50, upper_limit = 70,
                                    row_names_subset = TRUE, previous_year = FALSE,
                                    remove_insignificant = TRUE, alpha = 0.05, 
                                    tidy_env_data = FALSE, subset_years = c(1960, 2010))
 
 example_MVA_PREC <- daily_response(response = data_MVA, env_data = LJ_daily_precipitation,
-                                   method = "cor", lower_limit = 30, upper_limit = 70,
+                                   method = "cor", lower_limit = 50, upper_limit = 70,
                                    row_names_subset = TRUE, previous_year = FALSE,
                                    remove_insignificant = TRUE, alpha = 0.05, 
-                                   tidy_env_data = TRUE, subset_years = c(1960, 2010))
+                                   tidy_env_data = TRUE, subset_years = c(1960, 2010), 
+                                   aggregate_function = "sum")
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=10, fig.cap=paste("Figure 15: The temporal pattern of correlatioins for temperatures (up) and precipitation (down)")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=10, fig.cap=paste("Figure 15: The temporal pattern of correlatioins for temperatures (upper plot) and precipitation (lower plot)")----
 library(gridExtra)
 grid.arrange(example_MVA_TEMP$plot_heatmap, example_MVA_PREC$plot_heatmap)
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=10, fig.cap=paste("Figure 16: The highest calculated correlations for temperatures (up) and precipitation (down)")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=10, fig.cap=paste("Figure 16: The highest calculated correlations for temperatures (upper plot) and precipitation (lower plot)")----
 grid.arrange(example_MVA_TEMP$plot_extreme, example_MVA_PREC$plot_extreme)
 
 ## ------------------------------------------------------------------------
@@ -213,11 +214,11 @@ cor(example_proxies_1)
 example_multiproxy <- daily_response(response = example_proxies_1, 
                                      env_data = LJ_daily_temperatures, 
                                      method = "lm", metric = "adj.r.squared", 
-                                     lower_limit = 30, upper_limit = 70, 
+                                     lower_limit = 60, upper_limit = 70, 
                                      row_names_subset = TRUE, previous_year = FALSE, 
                                      remove_insignificant = TRUE, alpha = 0.05)
 
-## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("Figure 17: The temporal pattern of r squared for the multiproxy example)")----
+## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 17: The temporal pattern of r squared for the multiproxy example)")----
 example_multiproxy$plot_heatmap
 
 ## ------------------------------------------------------------------------

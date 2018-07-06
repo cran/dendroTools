@@ -5,16 +5,16 @@
 \title{daily_response}
 \usage{
 daily_response(response, env_data, method = "lm", metric = "r.squared",
-  lower_limit = 30, upper_limit = 270, fixed_width = 0,
+  lower_limit = 30, upper_limit = 90, fixed_width = 0,
   previous_year = FALSE, neurons = 1, brnn_smooth = TRUE,
   remove_insignificant = TRUE, alpha = 0.05, row_names_subset = FALSE,
   PCA_transformation = FALSE, log_preprocess = TRUE,
   components_selection = "automatic", eigenvalues_threshold = 1,
-  N_components = 2, use_median = FALSE,
-  temporal_stability_check = "sequential", k = 5,
-  cross_validation_type = "randomized", subset_years = NULL,
+  N_components = 2, aggregate_function = "mean",
+  temporal_stability_check = "sequential", k = 2,
+  cross_validation_type = "blocked", subset_years = NULL,
   plot_specific_window = NULL, ylimits = NULL, seed = NULL,
-  tidy_env_data = FALSE)
+  tidy_env_data = FALSE, reference_window = "start")
 }
 \arguments{
 \item{response}{a data frame with tree-ring proxy variables as columns and
@@ -85,8 +85,8 @@ manually enter the number of components to be used as predictors.}
 
 \item{N_components}{number of Principal Components used as predictors}
 
-\item{use_median}{if set to TRUE, median will be used instead of mean to calculate
-means of various ranges of env_data.}
+\item{aggregate_function}{character string specifying how the daily data should be
+aggregated. The default is 'mean', the two other options are 'median' and 'sum'}
 
 \item{temporal_stability_check}{character string, specifying, how temporal stability
 between the optimal selection and response variables will be analysed. Current
@@ -115,6 +115,22 @@ given in the form of: ylimits = c(0,1)}
 
 \item{tidy_env_data}{if set to TRUE, env_data should be inserted as a data frame with three
 columns: "Year", "DOY", "Precipitation/Temperature/etc."}
+
+\item{reference_window}{character string, the reference_window argument describes,
+how each calculation is referred. There are three different options: 'start'
+(default), 'end' and 'middle'. If the reference_window argument is set to 'start',
+then each calculation is related to the starting day of window. If the
+reference_window argument is set to 'middle', each calculation is related to the
+middle day of window calculation. If the reference_window argument is set to
+'end', then each calculation is related to the ending day of window calculation.
+For example, if we consider correlations with window from DOY 15 to DOY 35. If
+reference window is set to ‘start’, then this calculation will be related to the
+DOY 15. If the reference window is set to ‘end’, then this calculation will be
+related to the DOY 35. If the reference_window is set to 'middle', then this
+calculation is related to DOY 25.
+The optimal selection, which describes the optimal consecutive days that returns
+the highest calculated metric and is obtained by the $plot_extreme output, is the
+same for all three reference windows.}
 }
 \value{
 a list with 13 elements:
@@ -161,9 +177,10 @@ data(LJ_daily_temperatures)
 
 # 1 Example with fixed width
 example_fixed_width <- daily_response(response = data_MVA, env_data = LJ_daily_temperatures,
-                                     method = "brnn", fixed_width = 60,
+                                     method = "cor", fixed_width = 0,
                                      row_names_subset = TRUE, remove_insignificant = TRUE,
-                                     alpha = 0.05)
+                                     alpha = 0.05, aggregate_function = 'mean',
+                                     reference_window = "end")
 example_fixed_width$plot_extreme
 
 # 2 Example for past and present
@@ -171,12 +188,14 @@ example_MVA_past <- daily_response(response = data_MVA, env_data = LJ_daily_temp
 method = "cor", lower_limit = 21, upper_limit = 180,
 row_names_subset = TRUE, previous_year = TRUE,
 remove_insignificant = TRUE, alpha = 0.05,
-plot_specific_window = 60, subset_years = c(1940, 1980))
+plot_specific_window = 60, subset_years = c(1940, 1980), aggregate_function = 'sum')
+
 example_MVA_present <- daily_response(response = data_MVA, env_data = LJ_daily_temperatures,
-                                      method = "cor", lower_limit = 21, upper_limit = 180,
+                                      method = "cor", lower_limit = 21, upper_limit = 60,
                                       row_names_subset = TRUE, previous_year = TRUE,
                                       remove_insignificant = TRUE, alpha = 0.05,
-                                      plot_specific_window = 60, subset_years = c(1981, 2010))
+                                      plot_specific_window = 60, subset_years = c(1981, 2010),
+                                      aggregate_function = 'sum')
 
 example_MVA_past$plot_heatmap
 example_MVA_present$plot_heatmap
