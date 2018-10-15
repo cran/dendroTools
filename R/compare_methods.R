@@ -169,9 +169,9 @@
 #'
 #' # An example with default settings of machine learning algorithms
 #' experiment_1 <- compare_methods(formula = MVA~.,
-#' dataset = example_dataset_1, k = 10, repeats = 10, blocked_CV = TRUE,
+#' dataset = example_dataset_1, k = 10, repeats = 10, blocked_CV = FALSE,
 #' PCA_transformation = FALSE, components_selection = "automatic",
-#' optimize = TRUE, methods = c("MLR", "BRNN"), tuning_metric = "RSquared")
+#' optimize = TRUE, tuning_metric = "RSquared", methods = c("MLR", "BRNN", "MT", "BMT"))
 #' experiment_1$mean_std
 #' experiment_1$ranks
 #' experiment_1$bias_cal
@@ -346,13 +346,13 @@ dataset <- dataset[ names(dataset)[names(dataset) %in% allnames] ]
 if (!is.null(holdout)){
   if (holdout == "early"){
   dataset <- dataset[ order(as.numeric(row.names(dataset)), decreasing = TRUE),]
-  dataset_holdout = dataset[1:(nrow(dataset)*holdout_share),]
-  dataset = dataset[((nrow(dataset)*holdout_share)+1):nrow(dataset),]
+  dataset_holdout = dataset[1:round((nrow(dataset)*holdout_share),0),]
+  dataset = dataset[round(((nrow(dataset)*holdout_share)+1),0):nrow(dataset),]
 
   } else if (holdout == "late"){
     dataset <- dataset[ order(as.numeric(row.names(dataset)), decreasing = TRUE),]
-    dataset_holdout = dataset[(nrow(dataset) - (round(nrow(dataset)*holdout_share, 0))):nrow(dataset), ]
-    dataset = dataset[1:((nrow(dataset) - (round(nrow(dataset)*holdout_share, 0))) -1), ]
+    dataset_holdout = dataset[(nrow(dataset) - (round2(nrow(dataset)*holdout_share, 0)) + 1):nrow(dataset), ]
+    dataset = dataset[1:((nrow(dataset) - (round2(nrow(dataset)*holdout_share, 0)))), ]
 
   } else if (holdout == "manual"){
     dataset_holdout = dataset[row.names(dataset) %in% holdout_manual, ]
@@ -2128,6 +2128,22 @@ parameters <- data.frame(
              "RF", "RF", "RF"),
   Parameter = c("BRNN_neurons", "MT_M", "MT_N", "MT_U", "MT_R", "BMT_P", "BMT_I", "BMT_M",
                 "BMT_N", "BMT_U", "BMT_R", "RF_P", "RF_I", "RF_depth"),
+  Considered_values = c(
+    as.character(paste0(BRNN_neurons_vector, collapse=", ")),
+    as.character(paste0(MT_M_vector, collapse=", ")),
+    as.character(paste0(MT_N_vector, collapse=", ")),
+    as.character(paste0(MT_U_vector, collapse=", ")),
+    as.character(paste0(MT_R_vector, collapse=", ")),
+    as.character(paste0(BMT_P_vector, collapse=", ")),
+    as.character(paste0(BMT_I_vector, collapse=", ")),
+    as.character(paste0(BMT_M_vector, collapse=", ")),
+    as.character(paste0(BMT_N_vector, collapse=", ")),
+    as.character(paste0(BMT_U_vector, collapse=", ")),
+    as.character(paste0(BMT_R_vector, collapse=", ")),
+    as.character(paste0(RF_P_vector, collapse=", ")),
+    as.character(paste0(RF_I_vector, collapse=", ")),
+    as.character(paste0(RF_depth_vector, collapse=" "))
+    ),
   Value = c(BRNN_neurons, MT_M,
             ifelse(MT_N == 1, as.character("TRUE"), as.character("FALSE")),
             ifelse(MT_U == 1, as.character("TRUE"), as.character("FALSE")),
@@ -2136,6 +2152,8 @@ parameters <- data.frame(
             ifelse(BMT_U == 1, as.character("TRUE"), as.character("FALSE")),
             ifelse(BMT_R == 1, as.character("TRUE"), as.character("FALSE")),
             RF_P, RF_I, RF_depth))
+
+colnames(parameters) = c("Method", "Parameter", "Considered values", "Selected value")
 
 parameters <- parameters[parameters$Method %in% methods,]
 
@@ -2221,7 +2239,7 @@ plot_4 <- ggplot(reconstructions, aes(x = Year, y = reconstruction, group = meth
 # Here, I extract the "edge data", I calibrate models using the central part of the data and
 # afterwards use it on the edge data to see, how methods perform in modeling
 if (numIND == 1) {
-edge_factor <- round(nrow(dataset)*(edge_share/2),1)
+edge_factor <- round2(nrow(dataset)*(edge_share/2),0)
 
 dataset_max <- dplyr::arrange(dataset, desc(dataset[, -DepIndex]))[1:edge_factor,]
 dataset_min <- dplyr::arrange(dataset, desc(dataset[, -DepIndex]))[(nrow(dataset)-edge_factor+1):nrow(dataset),]
