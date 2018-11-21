@@ -4,24 +4,25 @@
 \alias{compare_methods}
 \title{compare_methods}
 \usage{
-compare_methods(formula, dataset, k = 10, repeats = 2, optimize = TRUE,
-  dataset_complete = NULL, BRNN_neurons = 1, MT_M = 4, MT_N = F,
-  MT_U = F, MT_R = F, BMT_P = 100, BMT_I = 100, BMT_M = 4,
-  BMT_N = F, BMT_U = F, BMT_R = F, RF_P = 100, RF_I = 100,
-  RF_depth = 0, seed_factor = 5, digits = 3, blocked_CV = FALSE,
+compare_methods(formula, dataset, k = 10, repeats = 2,
+  optimize = TRUE, dataset_complete = NULL, BRNN_neurons = 1,
+  MT_committees = 1, MT_neighbors = 5, MT_rules = 200,
+  MT_unbiased = TRUE, MT_extrapolation = 100, MT_sample = 0,
+  RF_ntree = 500, RF_maxnodes = 5, RF_mtry = 1, RF_nodesize = 1,
+  seed_factor = 5, digits = 3, blocked_CV = FALSE,
   PCA_transformation = FALSE, log_preprocess = TRUE,
   components_selection = "automatic", eigenvalues_threshold = 1,
   N_components = 2, round_bias_cal = 15, round_bias_val = 4,
   n_bins = 30, edge_share = 0.1, MLR_stepwise = FALSE,
-  stepwise_direction = "backward", methods = c("MLR", "BRNN", "MT", "BMT",
+  stepwise_direction = "backward", methods = c("MLR", "BRNN", "MT",
   "RF"), tuning_metric = "RMSE", BRNN_neurons_vector = c(1, 2, 3),
-  MT_M_vector = c(4, 8, 16, 25), MT_N_vector = c(TRUE, FALSE),
-  MT_U_vector = c(TRUE, FALSE), MT_R_vector = c(FALSE),
-  BMT_P_vector = c(100), BMT_I_vector = c(100), BMT_M_vector = c(4, 8, 16,
-  25), BMT_N_vector = c(TRUE, FALSE), BMT_U_vector = c(TRUE, FALSE),
-  BMT_R_vector = c(FALSE), RF_P_vector = c(100), RF_I_vector = c(100),
-  RF_depth_vector = c(0, 2), holdout = NULL, holdout_share = 0.1,
-  holdout_manual = NULL, total_reproducibility = FALSE)
+  MT_committees_vector = c(1, 5, 10), MT_neighbors_vector = c(0, 5),
+  MT_rules_vector = c(100, 200), MT_unbiased_vector = c(TRUE, FALSE),
+  MT_extrapolation_vector = c(100), MT_sample_vector = c(0),
+  RF_ntree_vector = c(100, 250, 500), RF_maxnodes_vector = c(5, 10, 20,
+  25), RF_mtry_vector = c(1), RF_nodesize_vector = c(1, 5, 10),
+  holdout = NULL, holdout_share = 0.1, holdout_manual = NULL,
+  total_reproducibility = FALSE)
 }
 \arguments{
 \item{formula}{an object of class "formula" (or one that can be coerced
@@ -33,42 +34,47 @@ columns and (optional) years as row names.}
 \item{k}{number of folds for cross-validation}
 
 \item{repeats}{number of cross-validation repeats. Should be equal or more
-than 2.}
+than 1.}
 
-\item{optimize}{if set to TRUE, the package caret will be used to tune parameters
-for regression methods}
+\item{optimize}{if set to TRUE (default), the optimal values for the tuning
+parameters will be selected in a preliminary cross-validation procedure}
 
 \item{dataset_complete}{optional, a data frame with the full length of tree-ring
 parameter, which will be used to reconstruct the climate variable specified
-with the formula argument.}
+with the formula argument}
 
 \item{BRNN_neurons}{number of neurons to be used for the brnn method}
 
-\item{MT_M}{minimum number of instances used by model trees}
+\item{MT_committees}{an integer:  how many committee models (e.g.  boosting
+iterations) should be used?}
 
-\item{MT_N}{unpruned (argument for model trees)}
+\item{MT_neighbors}{how many, if any, neighbors should be used to correct the
+model predictions}
 
-\item{MT_U}{unsmoothed (argument for model trees)}
+\item{MT_rules}{an integer (or NA): define an explicit limit to the number of
+rules used (NA let’s Cubist decide).}
 
-\item{MT_R}{use regression trees (argument for model trees)}
+\item{MT_unbiased}{a logical: should unbiased rules be used?}
 
-\item{BMT_P}{bagSizePercent (argument for bagging of model trees)}
+\item{MT_extrapolation}{a number between 0 and 100: since Cubist uses linear models,
+predictions can be outside of the outside of the range seen the training set. This
+parameter controls how much rule predictions are adjusted to be consistent with the
+training set.}
 
-\item{BMT_I}{number of iterations (argument for bagging of model trees)}
+\item{MT_sample}{a number between 0 and 99.9:  this is the percentage of the dataset
+to be randomly selected for model building (not for out-of-bag type evaluation)}
 
-\item{BMT_M}{minimum number of instances used by model trees}
+\item{RF_ntree}{number of trees to grow. This should not be set to too small
+a number, to ensure that every input row gets predicted at least a few times}
 
-\item{BMT_N}{unpruned (argument for bagging of model trees)}
+\item{RF_maxnodes}{maximum number of terminal nodes trees in the forest can
+have}
 
-\item{BMT_U}{unsmoothed (argument for bagging of model trees)}
+\item{RF_mtry}{number of variables randomly sampled as candidates at each
+split}
 
-\item{BMT_R}{use regression trees (argument for bagging of model trees)}
-
-\item{RF_P}{bagSizePercent (argument for random forest)}
-
-\item{RF_I}{number of iterations (argument for random forest)}
-
-\item{RF_depth}{maxDepth (argument for random forest)}
+\item{RF_nodesize}{minimum size of terminal nodes. Setting this number larger
+causes smaller trees to be grown (and thus take less time).}
 
 \item{seed_factor}{an integer that will be used to change the seed options
 for different repeats.}
@@ -121,7 +127,7 @@ for the MLR method}
 "backward", or "forward", with a default of "backward".}
 
 \item{methods}{a vector of strings related to methods that will be compared. A full
-method vector is methods = c("MLR", "BRNN", "MT", "BMT", "RF").
+method vector is methods = c("MLR", "BRNN", "MT", "RF").
 To use only a subset of methods, pass a vector of methods that you would like to compare.}
 
 \item{tuning_metric}{a string that specifies what summary metric will be used to select
@@ -130,31 +136,25 @@ also possible to use "RSquared".}
 
 \item{BRNN_neurons_vector}{a vector of possible values for BRNN_neurons argument optimization}
 
-\item{MT_M_vector}{a vector of possible values for MT_M argument optimization}
+\item{MT_committees_vector}{a vector of possible values for MT_committees argument optimization}
 
-\item{MT_N_vector}{a vector of possible values for MT_N argument optimization}
+\item{MT_neighbors_vector}{a vector of possible values for MT_neighbors argument optimization}
 
-\item{MT_U_vector}{a vector of possible values for MT_U argument optimization}
+\item{MT_rules_vector}{a vector of possible values for MT_rules argument optimization}
 
-\item{MT_R_vector}{a vector of possible values for MT_R argument optimization}
+\item{MT_unbiased_vector}{a vector of possible values for MT_unbiased argument optimization}
 
-\item{BMT_P_vector}{a vector of possible values for BMT_P argument optimization}
+\item{MT_extrapolation_vector}{a vector of possible values for MT_extrapolation argument optimization}
 
-\item{BMT_I_vector}{a vector of possible values for BMT_I argument optimization}
+\item{MT_sample_vector}{a vector of possible values for MT_sample argument optimization}
 
-\item{BMT_M_vector}{a vector of possible values for BMT_M argument optimization}
+\item{RF_ntree_vector}{a vector of possible values for RF_ntree argument optimization}
 
-\item{BMT_N_vector}{a vector of possible values for BMT_N argument optimization}
+\item{RF_maxnodes_vector}{a vector of possible values for RF_maxnodes argument optimization}
 
-\item{BMT_U_vector}{a vector of possible values for BMT_U argument optimization}
+\item{RF_mtry_vector}{a vector of possible values for RF_mtry argument optimization}
 
-\item{BMT_R_vector}{a vector of possible values for BMT_R argument optimization}
-
-\item{RF_P_vector}{a vector of possible values for RF_P argument optimization}
-
-\item{RF_I_vector}{a vector of possible values for RF_I argument optimization}
-
-\item{RF_depth_vector}{a vector of possible values for RF_depth argument optimization}
+\item{RF_nodesize_vector}{a vector of possible values for RF_nodesize argument optimization}
 
 \item{holdout}{this argument is used to define observations, which are excluded
 from the cross-validation and hyperparameters optimization. The holdout argument must be
@@ -196,67 +196,81 @@ a list with twelve elements:
  9 \tab $parameter_values    \tab a data frame with specifications of parameters used for different regression methods \cr
  10 \tab $PCA_output    \tab princomp object: the result output of the PCA analysis \cr
  11 \tab $reconstructions    \tab ggplot object: reconstructed dependent variable based on the dataset_complete argument, facet is used to split plots by methods  \cr
- 12 \tab $reconstructions_together    \tab ggplot object: reconstructed dependent variable based on the dataset_complete argument, all reconstructions are on the same plot
+ 12 \tab $reconstructions_together    \tab ggplot object: reconstructed dependent variable based on the dataset_complete argument, all reconstructions are on the same plot \cr
+ 13 \tab $normal_QQ_cal    \tab normal q-q plot for calibration data \cr
+ 14 \tab $normal_QQ_holdout    \tab normal q-q plot for holdout data \cr
+ 15 \tab $normal_QQ_edge    \tab normal q-q plot for edge data \cr
+ 16 \tab $residuals_vs_fitted_cal    \tab residuals vs fitted values plot for calibration data \cr
+ 17 \tab $residuals_vs_fitted_holdout    \tab residuals vs fitted values plot for holdout data \cr
+ 18 \tab $residuals_vs_fitted_edge    \tab residuals vs fitted values plot for edge data
 }
 }
 \description{
-Calculates performance metrics for train and test data of different
-regression methods: multiple linear regression (MLR), artificial neural
-networks with Bayesian regularization training algorithm (BRNN),
-M5P model trees (MT), model trees with bagging (BMT) and random forest
-of regression trees (RF). With the subset argument, specific methods of
-interest could be specified. Calculated performance metrics are the
-correlation coefficient (r), the root mean squared error (RMSE), the root
-relative squared error (RRSE), the index of agreement (d), the reduction
-of error (RE), the coefficient of efficiency (CE), the detrended
-efficiency (DE) and mean bias.
+Calculates performance metrics for calibration (train) and validation (test)
+data of different regression methods: multiple linear regression (MLR),
+artificial neural networks with Bayesian regularization training
+algorithm (BRNN), (ensemble of) model trees (MT) and random forest of regression
+trees (RF). With the subset argument, specific methods of interest could be
+specified. Calculated performance metrics are the correlation coefficient (r),
+the root mean squared error (RMSE), the root relative squared error (RRSE),
+the index of agreement (d), the reduction of error (RE), the coefficient of
+efficiency (CE), the detrended efficiency (DE) and mean bias. For each of the
+considered methods, there are also residual diagnostic plots available,
+separately for calibration, holdout and edge data, if applicable.
 }
 \examples{
 \dontrun{
 
 # An example with default settings of machine learning algorithms
-experiment_1 <- compare_methods(formula = MVA~.,
-dataset = example_dataset_1, k = 10, repeats = 10, blocked_CV = FALSE,
-PCA_transformation = FALSE, components_selection = "automatic",
-optimize = TRUE, tuning_metric = "RSquared", methods = c("MLR", "BRNN", "MT", "BMT"))
-experiment_1$mean_std
-experiment_1$ranks
-experiment_1$bias_cal
-experiment_1$bias_val
-experiment_1$transfer_functions
-experiment_1$transfer_functions_together
-experiment_1$PCA_output
-experiment_1$parameter_values
-experiment_1$transfer_functions
+library(dendroTools)
+data(example_dataset_1)
+example_1 <- compare_methods(formula = MVA~., dataset = example_dataset_1,
+edge_share = 0, holdout = "late")
+example_1$mean_std
+example_1$holdout_results
+example_1$edge_results
+example_1$ranks
+example_1$bias_cal
+example_1$bias_val
+example_1$transfer_functions
+example_1$transfer_functions_together
+example_1$PCA_output
+example_1$parameter_values
+example_1$residuals_vs_fitted_cal
+example_1$residuals_vs_fitted_edge
+example_1$residuals_vs_fitted_holdout
+example_1$normal_QQ_cal
+example_1$normal_QQ_edge
+example_1$normal_QQ_holdout
 
-experiment_2 <- compare_methods(formula = MVA ~  T_APR,
+
+example_2 <- compare_methods(formula = MVA ~  T_APR,
 dataset = example_dataset_1, k = 5, repeats = 10, BRNN_neurons = 1,
-MT_M = 4, MT_N = FALSE, MT_U = FALSE, MT_R = FALSE, BMT_P = 100,
-BMT_I = 100, BMT_M = 4, BMT_N = FALSE, BMT_U = FALSE, BMT_R = FALSE,
-RF_P = 100, RF_I = 100, RF_depth = 0, seed_factor = 5)
-experiment_2$mean_std
-experiment_2$ranks
-experiment_2$bias_cal
-experiment_2$transfer_functions
-experiment_2$transfer_functions_together
-experiment_2$PCA_output
+RF_ntree = 100, RF_mtry = 2, RF_maxnodes = 35, seed_factor = 5)
+example_2$mean_std
+example_2$ranks
+example_2$bias_cal
+example_2$transfer_functions
+example_2$transfer_functions_together
+example_2$PCA_output
+example_2$parameter_values
 
-experiment_3 <- compare_methods(formula = MVA ~ .,
+example_3 <- compare_methods(formula = MVA ~ .,
 dataset = example_dataset_1, k = 2, repeats = 5,
-methods = c("MLR", "BRNN", "MT", "BMT"),
+methods = c("MLR", "BRNN", "MT"),
 optimize = TRUE, MLR_stepwise = TRUE)
-experiment_3$mean_std
-experiment_3$ranks
-experiment_3$bias_val
-experiment_3$transfer_functions
-experiment_3$transfer_functions_together
-experiment_3$parameter_values
+example_3$mean_std
+example_3$ranks
+example_3$bias_val
+example_3$transfer_functions
+example_3$transfer_functions_together
+example_3$parameter_values
 
 library(dendroTools)
 library(ggplot2)
 data(dataset_TRW)
 comparison_TRW <- compare_methods(formula = T_Jun_Jul ~ TRW, dataset = dataset_TRW,
-k = 3, repeats = 10, optimize = TRUE, methods = c("MLR", "MT", "BMT", "BRNN"),
+k = 3, repeats = 10, optimize = FALSE, methods = c("MLR", "BRNN", "RF", "MT"),
 seed_factor = 5, dataset_complete = dataset_TRW_complete, MLR_stepwise = TRUE,
 stepwise_direction = "backward")
 comparison_TRW$mean_std
@@ -265,6 +279,7 @@ comparison_TRW$transfer_functions + xlab(expression(paste('TRW'))) +
 ylab("June-July Mean Temperature [Â°C]")
 comparison_TRW$reconstructions
 comparison_TRW$reconstructions_together
+comparison_TRW$edge_results
 }
 }
 \references{
