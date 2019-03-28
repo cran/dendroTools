@@ -1,7 +1,8 @@
 #' plot_extreme
 #'
-#' Graphs a line plot of a row with the highest metric in a matrix, produced by
-#' \code{\link{daily_response}} function.
+#' Graphs a line or bar plot of a row with the highest metric in a matrix, produced by
+#' \code{\link{daily_response}} or \code{\link{monthly_response}} functions. Bar plot is
+#' drawn for monthly_response(), while for daily_response, line plot is produced.
 #'
 #' @param result_daily_response a list with three objects as produced by
 #' daily_response function
@@ -19,6 +20,7 @@
 #' DOY 15. If the reference window is set to ‘end’, then this calculation will be
 #' related to the DOY 35. If the reference_window is set to 'middle', then this
 #' calculation is related to DOY 25.
+#' @param type the character string describing type of analysis: daily or monthly
 #'
 #' @return A ggplot2 object containing the plot display
 #'
@@ -54,7 +56,7 @@
 #'
 #' @keywords internal
 
-plot_extreme <- function(result_daily_response, title = TRUE, ylimits = NULL, reference_window = "start") {
+plot_extreme <- function(result_daily_response, title = TRUE, ylimits = NULL, reference_window = "start", type = "daily") {
 
   # Short description of the function. It
   # - extracts matrix (the frst object of a list)
@@ -67,6 +69,12 @@ plot_extreme <- function(result_daily_response, title = TRUE, ylimits = NULL, re
 
   # A) Extracting a matrix from a list and converting it into a data frame
   result_daily_element1 <- data.frame(result_daily_response[[1]])
+
+  # Do we have monthly or daily data?
+  type <- type
+
+  # GLobl variable
+  final_list <- NULL
 
   # With the following chunk, overall_maximum and overall_minimum values of
   # result_daily_element1 matrix are calculated.
@@ -88,6 +96,7 @@ plot_extreme <- function(result_daily_response, title = TRUE, ylimits = NULL, re
     max_result <- suppressWarnings(which.max(apply(result_daily_element1,
       MARGIN = 2, max, na.rm = TRUE)))
     plot_column <- max_result
+    plot_column_source <- plot_column
     max_index <- which.max(result_daily_element1[, names(max_result)])
     row_index <- row.names(result_daily_element1)[max_index]
     temporal_vector <- unlist(result_daily_element1[max_index, ])
@@ -105,7 +114,7 @@ plot_extreme <- function(result_daily_response, title = TRUE, ylimits = NULL, re
     }
     # To check if the last row is a missing value
     if (is.na(temporal_vector[nrow(temporal_vector), ] == TRUE)) {
-      temporal_vector <-  temporal_vector[-c(row_count:(row_count +
+      temporal_vector <-  temporal_vector[-c((row_count + 1):(row_count +
                                                             delete_rows)), ]
     }
     temporal_vector <- data.frame(temporal_vector)
@@ -119,6 +128,7 @@ plot_extreme <- function(result_daily_response, title = TRUE, ylimits = NULL, re
     min_result <- suppressWarnings(which.min(apply(result_daily_element1,
       MARGIN = 2, min, na.rm = TRUE)))
     plot_column <- min_result
+    plot_column_source <- plot_column
     min_index <- which.min(result_daily_element1[, names(min_result)])
     row_index <- row.names(result_daily_element1)[min_index]
     temporal_vector <- unlist(result_daily_element1[min_index, ])
@@ -138,7 +148,7 @@ plot_extreme <- function(result_daily_response, title = TRUE, ylimits = NULL, re
     }
     # To check if the last row is a missing value
     if (is.na(temporal_vector[nrow(temporal_vector), ] == TRUE)) {
-      temporal_vector <-  temporal_vector[-c(row_count:(row_count +
+      temporal_vector <-  temporal_vector[-c((row_count + 1):(row_count +
                                                             delete_rows)), ]
     }
     temporal_vector <- data.frame(temporal_vector)
@@ -303,6 +313,160 @@ plot_extreme <- function(result_daily_response, title = TRUE, ylimits = NULL, re
                    optimal_window_string, reference_string, Optimal_string)) +
     xlab(x_lab) +
     ylab(y_lab)
+
+
+
+  if (type == "monthly"){
+
+    # Plural or singular?
+    if (as.numeric(row_index) == 1){
+      month_string <- " Month"
+
+    } else {
+      month_string <- " Months"
+    }
+
+    # In case of previous_year == TRUE, we calculate the day of a year
+    # (plot_column), considering 366 days of previous year.
+
+    if (ncol(result_daily_response[[1]]) == 24 & plot_column > 12) {
+      plot_column_extra <- plot_column %% 12
+    } else {
+      plot_column_extra <- plot_column
+    }
+
+
+    if (reference_window == 'start' &&  plot_column > 12 && ncol(result_daily_response[[1]]) == 24){
+      reference_string <- paste0("\nStarting Month of Optimal Window Width: Month ",
+                                 plot_column_extra, " of Current Year")}
+
+    if (reference_window == 'start' &&  plot_column <= 12 && ncol(result_daily_response[[1]]) == 24){
+      reference_string <- paste0("\nStarting Month of Optimal Window Width: Month ",
+                                 plot_column_extra, " of Previous Year")}
+
+    if (reference_window == 'start' &&  plot_column <=  12 && ncol(result_daily_response[[1]]) <=  12){
+      reference_string <- paste0("\nStarting Month of Optimal Window Width: Month ",
+                                 plot_column_extra)}
+
+
+
+        optimal_window_string <- paste0("\nOptimal Window Width: ", as.numeric(row_index),
+                                        month_string)
+
+        # Here we define a data frame of months. Later
+        # this dataframe will be used to describe tht optimal sequence od days
+
+        if (ncol(result_daily_response[[1]]) == 24){
+          date_codes <- c("Jan*", "Feb*", "Mar*", "Apr*", "May*", "Jun*", "Jul*", "Aug*", "Sep*", "Oct*", "Nov*", "Dec*",
+                          "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+        } else if (ncol(result_daily_response[[1]]) == 12){
+
+          date_codes <- c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+        }
+
+
+
+
+
+
+        if (reference_window == "start"){
+          Optimal_string <- paste("\nOptimal Selection:",
+                                  as.character(date_codes[plot_column_source]),"-",
+                                  as.character(date_codes[plot_column_source + as.numeric(row_index) - 1]))
+        } else if (reference_window == "end") {
+          Optimal_string <- paste("\nOptimal Selection:",
+                                  as.character(date_codes[plot_column_source - as.numeric(row_index) + 1]),"-",
+                                  as.character(date_codes[plot_column_source]))
+        } else if (reference_window == "middle") {
+          Optimal_string <- paste("\nOptimal Selection:",
+                                  as.character(date_codes[(round2((plot_column_source - as.numeric(row_index)/2)) - adjustment_1)]),"-",
+                                  as.character(date_codes[(round2((plot_column_source + as.numeric(row_index)/2)) - adjustment_2)]))
+        }
+
+        if (as.numeric(row_index == 1)){
+          Optimal_string <- substr(Optimal_string, 1, nchar(Optimal_string)-6)
+        }
+
+        if ((plot_column_extra) > 12){
+
+
+        }
+
+
+
+    if (ncol(result_daily_response[[1]]) == 12){
+
+      window_widths <- seq(1, length(temporal_vector))
+
+      row_count <- 1
+      delete_rows <- 0
+
+      while (is.na(temporal_vector[row_count, ] == TRUE)){
+        delete_rows <- delete_rows + 1
+        row_count <-  row_count + 1
+      }
+
+      color_values <- rep("grey50", sum(!is.na(temporal_vector)))
+      color_values[ plot_column - row_count + 1] <- "red"
+
+    months <- c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
+
+
+    final_plot <- suppressWarnings(
+      ggplot(temporal_vector, aes(y = temporal_vector,
+                                  x = seq(1, length(temporal_vector)))) +
+        geom_col() +
+        geom_hline(yintercept = 0) +
+        scale_x_continuous(breaks = sort(c(seq(1, 12, 1)), decreasing = FALSE),
+                           labels = months) +
+        scale_y_continuous(limits = ylimits) +
+        annotate("label", label = as.character(calculated_metric),
+                 y = calculated_metric, x = plot_column) +
+        xlab(paste0("Starting Month of Calculation and ",as.character(as.numeric(row_index)) ," Conecutive", month_string)) +
+        ylab(y_lab) +
+        ggtitle(paste0(period_string, method_string, optimal_calculation,
+                       optimal_window_string, reference_string, Optimal_string)) +
+
+        journal_theme)
+
+
+    } else if (ncol(result_daily_response[[1]]) == 24){
+
+      months <- c("J*", "F*", "M*", "A*", "M*", "J*", "J*", "A*", "S*", "O*", "N*", "D*",
+                  "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
+
+     window_widths <- seq(1, nrow(temporal_vector))
+
+     row_count <- 1
+     delete_rows <- 0
+     while (is.na(temporal_vector[row_count, ] == TRUE)){
+       delete_rows <- delete_rows + 1
+       row_count <-  row_count + 1
+     }
+
+     color_values <- rep("grey50", sum(!is.na(temporal_vector)))
+     color_values[ plot_column - row_count + 1] <- "red"
+
+     final_plot <- suppressWarnings(
+       ggplot(temporal_vector, aes(y = temporal_vector, x = seq(1, length(temporal_vector)))) +
+         geom_col() +
+          scale_x_continuous(breaks = sort(c(seq(1, 24, 1)), decreasing = FALSE),
+                           labels = months) +
+                  annotate("label", label = as.character(calculated_metric), y = calculated_metric, x = plot_column) +
+                    xlab(paste0("Starting Month of Calculation (Including Previous Year) and ",as.character(as.numeric(row_index)) ,
+                         " Conecutive", month_string)) +
+                    ylab(y_lab) +
+          scale_fill_discrete(guide=FALSE) +
+                    geom_hline(yintercept = 0) +
+          scale_y_continuous(limits = ylimits) +
+          ggtitle(paste0(period_string, method_string, optimal_calculation,
+                         optimal_window_string, reference_string, Optimal_string)) +
+          journal_theme)
+    }
+
+  }
 
   final_plot
 
