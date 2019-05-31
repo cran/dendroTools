@@ -1,37 +1,33 @@
-#' daily_response_seascorr
+#' monthly_response_seascorr
 #'
 #' Function calculates all possible partial correlation coefficients between
-#' tree-ring chronology and daily environmental (usually climate) data.
-#' Calculations are based on moving window which is defined with two
-#' arguments: lower_limit and upper_limit. All calculated (partial) correlation
-#' coeficients are stored in a matrix. The location of stored correlation
-#' in the matrix is indicating a window width (row names) and a location in a
-#' matrix of daily sequences of environmental data (column names).
+#' tree-ring chronology and monthly environmental (usually climate) data.
+#' All calculated (partial) correlation coeficients are stored in a matrix.
+#' The location of stored correlation in the matrix is indicating a window
+#' width (row names) and a location in a
+#' matrix of monthly sequences of environmental data (column names).
+#'
 #' @param response a data frame with tree-ring proxy variable and (optional)
 #' years as row names. Row.names should be matched with those from env_data_primary
 #' and env_data_control data frame. If not, set the row_names_subset argument to
 #' TRUE.
-#' @param env_data_primary primary data frame of daily sequences of environmental
+#' @param env_data_primary primary data frame of monthly sequences of environmental
 #' data as columns and years as row names. Each row represents a year and
 #' each column represents a day of a year. Row.names should be matched with
 #' those from the response data frame. If not, set the argument row_names_subset
 #' to TRUE. Alternatively, env_data_primary could be a tidy data with three columns,
-#' i.e. Year, DOY and third column representing values of mean temperatures,
+#' i.e. Year, Month and third column representing values of mean temperatures,
 #' sum of precipitation etc. If tidy data is passed to the function, set the argument
 #' tidy_env_data_primary to TRUE.
-#' @param env_data_control a data frame of daily sequences of environmental data as
+#' @param env_data_control a data frame of monthly sequences of environmental data as
 #' columns and years as row names. This data is used as control for calculations of
 #' partial correlation coefficients. Each row represents a year and each column
 #' represents a day of a year. Row.names should be matched with those from the
 #' response data frame. If not, set the row_names_subset argument to TRUE.
 #' Alternatively, env_data_control could be a tidy data with three columns,
-#' i.e. Year, DOY and third column representing values of mean temperatures, sum
+#' i.e. Year, Month and third column representing values of mean temperatures, sum
 #' of precipitation etc. If tidy data is passed to the function, set the argument
 #' tidy_env_data_control to TRUE.
-#' @param lower_limit lower limit of window width
-#' @param upper_limit upper limit of window width
-#' @param fixed_width fixed width used for calculation. If fixed_width is
-#' assigned a value, upper_limit and lower_limit will be ignored
 #' @param pcor_method a character string indicating which partial correlation
 #' coefficient is to be computed. One of "pearson" (default), "kendall", or
 #' "spearman", can be abbreviated.
@@ -60,10 +56,10 @@
 #' @param eigenvalues_threshold threshold for automatic selection of Principal Components
 #' @param N_components number of Principal Components used as predictors
 #' @param aggregate_function_env_data_primary character string specifying how the
-#' daily data from env_data_primary should be aggregated. The default is 'mean',
+#' monthly data from env_data_primary should be aggregated. The default is 'mean',
 #' the two other options are 'median' and 'sum'
 #' @param aggregate_function_env_data_control character string specifying how the
-#' daily data from env_data_control should be aggregated. The default is 'mean',
+#' monthly data from env_data_control should be aggregated. The default is 'mean',
 #' the two other options are 'median' and 'sum'
 #' @param temporal_stability_check character string, specifying, how temporal stability
 #' between the optimal selection and response variable(s) will be analysed. Current
@@ -87,24 +83,9 @@
 #' given in the form of: ylimits = c(0,1)
 #' @param seed optional seed argument for reproducible results
 #' @param tidy_env_data_primary if set to TRUE, env_data_primary should be inserted as a
-#' data frame with three columns: "Year", "DOY", "Precipitation/Temperature/etc."
+#' data frame with three columns: "Year", "Month", "Precipitation/Temperature/etc."
 #' @param tidy_env_data_control if set to TRUE, env_data_control should be inserted as a
-#' data frame with three columns: "Year", "DOY", "Precipitation/Temperature/etc."
-#' @param reference_window character string, the reference_window argument describes,
-#' how each calculation is referred. There are three different options: 'start'
-#' (default), 'end' and 'middle'. If the reference_window argument is set to 'start',
-#' then each calculation is related to the starting day of window. If the
-#' reference_window argument is set to 'middle', each calculation is related to the
-#' middle day of window calculation. If the reference_window argument is set to
-#' 'end', then each calculation is related to the ending day of window calculation.
-#' For example, if we consider correlations with window from DOY 15 to DOY 35. If
-#' reference window is set to ‘start’, then this calculation will be related to the
-#' DOY 15. If the reference window is set to ‘end’, then this calculation will be
-#' related to the DOY 35. If the reference_window is set to 'middle', then this
-#' calculation is related to DOY 25.
-#' The optimal selection, which describes the optimal consecutive days that returns
-#' the highest calculated metric and is obtained by the $plot_extreme output, is the
-#' same for all three reference windows.
+#' data frame with three columns: "Year", "Month", "Precipitation/Temperature/etc."
 #'
 #' @return a list with 14 elements:
 #' \tabular{rll}{
@@ -112,8 +93,8 @@
 #'  2 \tab $method \tab the character string of a method \cr
 #'  3 \tab $metric   \tab the character string indicating the metric used for calculations \cr
 #'  4 \tab $analysed_period    \tab the character string specifying the analysed period based on the information from row names. If there are no row names, this argument is given as NA \cr
-#'  5 \tab $optimized_return   \tab data frame with two columns, response variable and aggregated (averaged) daily data that return the optimal results. This data.frame could be directly used to calibrate a model for climate reconstruction \cr
-#'  6 \tab $optimized_return_all    \tab a data frame with aggregated daily data, that returned the optimal result for the entire env_data_primary (and not only subset of analysed years) \cr
+#'  5 \tab $optimized_return   \tab data frame with two columns, response variable and aggregated (averaged) monthly data that return the optimal results. This data.frame could be directly used to calibrate a model for climate reconstruction \cr
+#'  6 \tab $optimized_return_all    \tab a data frame with aggregated monthly data, that returned the optimal result for the entire env_data_primary (and not only subset of analysed years) \cr
 #'  7 \tab $transfer_function    \tab a ggplot object: scatter plot of optimized return and a transfer line of the selected method \cr
 #'  8 \tab $temporal_stability    \tab a data frame with calculations of selected metric for different temporal subsets\cr
 #'  9 \tab $cross_validation   \tab a data frame with cross validation results \cr
@@ -121,7 +102,7 @@
 #'  11 \tab $plot_extreme    \tab ggplot2 object: line plot of a row with the highest value in a matrix of calculated metrics\cr
 #'  12 \tab $plot_specific    \tab ggplot2 object: line plot of a row with a selected window width in a matrix of calculated metrics\cr
 #'  13 \tab $PCA_output    \tab princomp object: the result output of the PCA analysis\cr
-#'  14 \tab $type    \tab the character string describing type of analysis: daily or monthly\cr
+#'  14 \tab $type    \tab the character string describing type of analysis: monthly or monthly\cr
 #'  15 \tab $reference_window \tab character string, which referece window was used for calculations
 #'}
 #'
@@ -138,22 +119,21 @@
 #' data(data_TRW_1)
 #' data(example_proxies_individual)
 #' data(example_proxies_1)
-#' data(LJ_daily_temperatures)
-#' data(LJ_daily_precipitation)
+#' data(LJ_monthly_temperatures)
+#' data(LJ_monthly_precipitation)
 #'
 #' # 1 Basic example
-#' example_basic <- daily_response_seascorr(response = data_MVA,
-#'                           env_data_primary = LJ_daily_temperatures,
-#'                           env_data_control = LJ_daily_precipitation,
-#'                           row_names_subset = TRUE, lower_limit = 1,
+#' example_basic <- monthly_response_seascorr(response = data_MVA,
+#'                           env_data_primary = LJ_monthly_temperatures,
+#'                           env_data_control = LJ_monthly_precipitation,
+#'                           row_names_subset = TRUE,
 #'                           remove_insignificant = TRUE,
 #'                           aggregate_function_env_data_primary = 'median',
 #'                           aggregate_function_env_data_control = 'median',
 #'                           alpha = 0.05, pcor_method = "spearman",
 #'                           tidy_env_data_primary = FALSE,
-#'                           previous_year = TRUE,
 #'                           tidy_env_data_control = TRUE,
-#'                           reference_window = "middle")
+#'                           previous_year = TRUE)
 #' summary(example_basic)
 #' example_basic$plot_extreme
 #' example_basic$plot_heatmap
@@ -162,30 +142,26 @@
 #' example_basic$optimized_return_all
 #'
 #'
-#' # 2 Example with fixed temporal time window
-#' example_fixed_width <- daily_response_seascorr(response = data_MVA,
-#'                           env_data_primary = LJ_daily_temperatures,
-#'                           env_data_control = LJ_daily_precipitation,
+#' # 2 Extended example
+#' example_extended <- monthly_response_seascorr(response = data_MVA,
+#'                           env_data_primary = LJ_monthly_temperatures,
+#'                           env_data_control = LJ_monthly_precipitation,
 #'                           row_names_subset = TRUE,
 #'                           remove_insignificant = TRUE,
 #'                           aggregate_function_env_data_primary = 'mean',
 #'                           aggregate_function_env_data_control = 'mean',
 #'                           alpha = 0.05,
-#'                           fixed_width = 45,
 #'                           tidy_env_data_primary = FALSE,
-#'                           tidy_env_data_control = TRUE,
-#'                           reference_window = "end")
+#'                           tidy_env_data_control = TRUE)
 #'
-#' example_fixed_width$plot_extreme
-#' example_fixed_width$plot_heatmap
-#' example_fixed_width$optimized_return
-#' example_fixed_width$optimized_return_all
+#' example_extended$plot_extreme
+#' example_extended$plot_heatmap
+#' example_extended$optimized_return
+#' example_extended$optimized_return_all
 #'
 #' }
 
-daily_response_seascorr <- function(response, env_data_primary, env_data_control,
-                           lower_limit = 30,
-                           upper_limit = 90, fixed_width = 0,
+monthly_response_seascorr <- function(response, env_data_primary, env_data_control,
                            previous_year = FALSE, pcor_method = "pearson",
                            remove_insignificant = TRUE,
                            alpha = .05, row_names_subset = FALSE,
@@ -199,8 +175,7 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
                            k_running_window = 30, cross_validation_type = "blocked",
                            subset_years = NULL, plot_specific_window = NULL,
                            ylimits = NULL, seed = NULL, tidy_env_data_primary = FALSE,
-                           tidy_env_data_control = FALSE,
-                           reference_window = 'start') {
+                           tidy_env_data_control = FALSE) {
 
 
   if (!is.null(seed)) {
@@ -224,6 +199,11 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
  d <- NULL
  env_data_primary_control <- NULL
  metric <- NULL
+
+ lower_limit = 1
+ upper_limit = 12
+ fixed_width = 0
+ reference_window = 'start'
 
  # Here I define the method = "cor", so the fubctionality is ensured
  method = "cor"
@@ -261,14 +241,14 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
                 colnames_tidy_DF[1], "instead!"))
    }
 
-   if (colnames_tidy_DF[2] != "DOY"){
+   if (colnames_tidy_DF[2] != "Month"){
      stop(paste("env_data_control was inserted in tidy version (tidy_env_data_control is set to TRUE).",
-                "The second column name of the env_data_control should be 'DOY', but it is",
+                "The second column name of the env_data_control should be 'Month', but it is",
                 colnames_tidy_DF[2], "instead!"))
    }
 
    value_variable = colnames(env_data_control)[3]
-   env_data_control <- dcast(env_data_control, Year~DOY, value.var = value_variable)
+   env_data_control <- dcast(env_data_control, Year~Month, value.var = value_variable)
    env_data_control <- years_to_rownames(env_data_control, "Year")
  }
 
@@ -290,14 +270,14 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
                 colnames_tidy_DF[1], "instead!"))
    }
 
-   if (colnames_tidy_DF[2] != "DOY"){
+   if (colnames_tidy_DF[2] != "Month"){
      stop(paste("env_data_control was inserted in tidy version (tidy_env_data_control is set to TRUE).",
-                "The second column name of the env_data_control should be 'DOY', but it is",
+                "The second column name of the env_data_control should be 'Month', but it is",
                 colnames_tidy_DF[2], "instead!"))
    }
 
    value_variable = colnames(env_data_control)[3]
-   env_data_control <- dcast(env_data_control, Year~DOY, value.var = value_variable)
+   env_data_control <- dcast(env_data_control, Year~Month, value.var = value_variable)
    env_data_control <- years_to_rownames(env_data_control, "Year")
  }
 
@@ -416,24 +396,6 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
     stop(paste("row.names does not appear to be years!",
                 "At least three characters needed!"))
   }
-
-  # In case of selected window size is less than 14 (2 weeks) or greater than 270 (9 months)
-  if (lower_limit < 14) {
-    warning("Selected lower_limit is less than 14. Consider increasing it!")
-  }
-
-  if (upper_limit > 270) {
-    warning("Selected upper_limit is greater than 270. Consider using lower upper_limit!")
-  }
-
-  if (fixed_width < 14 & fixed_width > 0) {
-    warning("Selected fixed_width is less than 14. Consider increasing it!")
-  }
-
-  if (fixed_width > 270) {
-    warning("Selected fixed_width is greater than 270. Consider using lower fixed_width!")
-  }
-
 
   # If PCA_transformation = TRUE, PCA is performed
   if (PCA_transformation == TRUE) {
@@ -562,12 +524,11 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
         }
 
 
-        x1 <- matrix(x1, nrow = nrow(env_data_primary), ncol = 1)
-        x2 <- matrix(x2, nrow = nrow(env_data_control), ncol = 1)
-
         my_temporal_data <- cbind(response[, 1], x1[, 1], x2[, 1])
         colnames(my_temporal_data) <- c("x", "y", "z")
         temporal_correlation <- partial.r(data=my_temporal_data, x=c("x","y"), y="z", use="pairwise",method = pcor_method)[2]
+
+
 
         # Each calculation is printed. Reason: usually it takes several minutes
         # to go through all loops and therefore, users might think that R is
@@ -629,6 +590,7 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
   pb <- txtProgressBar(min = 0, max = (upper_limit - lower_limit),
                        style = 3)
 
+
   b = 0
 
 
@@ -654,7 +616,7 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
 
           x1 <- env_data_primary[,K+j]
 
-        } else {
+          } else {
 
           x1 <- apply(env_data_primary[1:nrow(env_data_primary), (1 + j) : (j + K)],1 , sum, na.rm = TRUE)}
 
@@ -662,14 +624,12 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
       else if (aggregate_function_env_data_primary == 'mean'){
 
         if (K == 1){
-
           x1 <- env_data_primary[,K+j]
-
         } else {
 
           x1 <- rowMeans(env_data_primary[1:nrow(env_data_primary), (1 + j) : (j + K)], na.rm = T)}
 
-         } else {
+          } else {
         stop(paste0("aggregate function for env_data_primary is ", aggregate_function_env_data_primary, ". Instead it should be mean, median or sum."))
       }
 
@@ -691,14 +651,13 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
 
       } else if (aggregate_function_env_data_control == 'sum'){
 
-
         if (K == 1){
           x2 <- env_data_control[,K+j]
         } else {
 
           x2 <- apply(env_data_control[1:nrow(env_data_control), (1 + j) : (j + K)],1 , sum, na.rm = TRUE)}
 
-      }
+        }
       else if (aggregate_function_env_data_control == 'mean'){
 
         if (K == 1){
@@ -713,14 +672,14 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
 
       }
 
-      x1 <- matrix(x1, nrow = nrow(env_data_primary), ncol = 1)
+       x1 <- matrix(x1, nrow = nrow(env_data_primary), ncol = 1)
 
-      x2 <- matrix(x2, nrow = nrow(env_data_primary), ncol = 1)
+       x2 <- matrix(x2, nrow = nrow(env_data_primary), ncol = 1)
 
+       my_temporal_data <- cbind(response[, 1], x1[, 1], x2[, 1])
+       colnames(my_temporal_data) <- c("x", "y", "z")
+       temporal_correlation <- partial.r(data=my_temporal_data, x=c("x","y"), y="z", use="pairwise",method = pcor_method)[2]
 
-      my_temporal_data <- cbind(response[, 1], x1[, 1], x2[, 1])
-      colnames(my_temporal_data) <- c("x", "y", "z")
-      temporal_correlation <- partial.r(data=my_temporal_data, x=c("x","y"), y="z", use="pairwise",method = pcor_method)[2]
 
       if (reference_window == 'start'){
         temporal_matrix[(K - lower_limit) + 1, j + 1] <- as.numeric(temporal_correlation)[1]
@@ -1045,6 +1004,7 @@ daily_response_seascorr <- function(response, env_data_primary, env_data_control
   colnames(my_temporal_data) <- c("x", "y", "z")
   test_calculation <- partial.r(data=my_temporal_data, x=c("x","y"), y="z", use="pairwise",method = pcor_method)[2]
 
+
   test_logical <- as.numeric(max_calculation) == as.numeric(test_calculation)
 
 if (test_logical == FALSE){
@@ -1332,8 +1292,8 @@ for (m in 1:length(empty_list_datasets)){
                        cross_validation = cross_validation)
   }
 
-    plot_heatmapA <- plot_heatmap(final_list, reference_window = reference_window, type = "daily")
-    plot_extremeA <- plot_extreme(final_list, ylimits = ylimits, reference_window = reference_window, type = "daily")
+    plot_heatmapA <- plot_heatmap(final_list, reference_window = reference_window, type = "monthly")
+    plot_extremeA <- plot_extreme(final_list, ylimits = ylimits, reference_window = reference_window, type = "monthly")
 
     width_sequence = seq(lower_limit, upper_limit)
 
@@ -1366,7 +1326,7 @@ for (m in 1:length(empty_list_datasets)){
                          plot_extreme = plot_extremeA,
                          plot_specific = plot_specificA,
                          PCA_output = PCA_result,
-                         type = "daily",
+                         type = "monthly",
                          reference_window = reference_window)
     }
 
@@ -1381,7 +1341,7 @@ for (m in 1:length(empty_list_datasets)){
                          plot_extreme = plot_extremeA,
                          plot_specific = plot_specificA,
                          PCA_output = PCA_result,
-                         type = "daily",
+                         type = "monthly",
                          reference_window = reference_window)
     }
 

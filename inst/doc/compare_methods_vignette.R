@@ -36,13 +36,13 @@ basic_example$bias_cal
 library(ggplot2)
 basic_example$transfer_functions +   
   xlab(expression(paste('MVA [',mm^2,']'))) +
-  ylab("April Mean Temperature [°C]")
+  ylab("April Mean Temperature [Â°C]")
 
 ## ---- fig.align='center', warning=FALSE, fig.width=7, fig.height=5, fig.cap=paste("The transfer functions of different methods, all functions are on the same plot, therefore it is easy to see the differences among different methods.")----
 # See the transfer functions, plotted together. This is a ggplot object and could be easily customized. 
 basic_example$transfer_functions_together +   
   xlab(expression(paste('MVA [',mm^2,']'))) +
-  ylab("April Mean Temperature [°C]")
+  ylab("April Mean Temperature [Â°C]")
 
 ## ------------------------------------------------------------------------
 # The data frame of optimized tuning parameters for different methods

@@ -5,9 +5,9 @@
 \title{daily_response}
 \usage{
 daily_response(response, env_data, method = "lm", metric = "r.squared",
-  lower_limit = 30, upper_limit = 90, fixed_width = 0,
-  previous_year = FALSE, neurons = 1, brnn_smooth = TRUE,
-  remove_insignificant = TRUE, alpha = 0.05,
+  cor_method = "pearson", lower_limit = 30, upper_limit = 90,
+  fixed_width = 0, previous_year = FALSE, neurons = 1,
+  brnn_smooth = TRUE, remove_insignificant = TRUE, alpha = 0.05,
   row_names_subset = FALSE, PCA_transformation = FALSE,
   log_preprocess = TRUE, components_selection = "automatic",
   eigenvalues_threshold = 1, N_components = 2,
@@ -36,6 +36,10 @@ possibilities are "cor", "lm" and "brnn".}
 \item{metric}{a character string specifying which metric to use. Current
 possibilities are "r.squared" and "adj.r.squared". If method = "cor",
 metric is not relevant.}
+
+\item{cor_method}{a character string indicating which correlation
+coefficient is to be computed. One of "pearson" (default), "kendall", or
+"spearman".}
 
 \item{lower_limit}{lower limit of window width}
 
@@ -137,7 +141,7 @@ the highest calculated metric and is obtained by the $plot_extreme output, is th
 same for all three reference windows.}
 }
 \value{
-a list with 14 elements:
+a list with 15 elements:
 \tabular{rll}{
  1 \tab $calculations   \tab a matrix with calculated metrics\cr
  2 \tab $method \tab the character string of a method \cr
@@ -152,7 +156,8 @@ a list with 14 elements:
  11 \tab $plot_extreme    \tab ggplot2 object: line plot of a row with the highest value in a matrix of calculated metrics\cr
  12 \tab $plot_specific    \tab ggplot2 object: line plot of a row with a selected window width in a matrix of calculated metrics\cr
  13 \tab $PCA_output    \tab princomp object: the result output of the PCA analysis\cr
- 14 \tab $type    \tab the character string describing type of analysis: daily or monthly
+ 14 \tab $type    \tab the character string describing type of analysis: daily or monthly\cr
+ 15 \tab $reference_window \tab character string, which referece window was used for calculations
 }
 }
 \description{
@@ -185,7 +190,10 @@ example_daily_response <- daily_response(response = data_MVA, env_data = LJ_dail
                                      method = "cor", fixed_width = 0,
                                      row_names_subset = TRUE, remove_insignificant = TRUE,
                                      alpha = 0.05, aggregate_function = 'mean',
-                                     reference_window = "end")
+                                     reference_window = "end", previous_year = TRUE,
+                                     cor_method = "spearman")
+class(example_daily_response)
+summary(example_daily_response)
 example_daily_response$plot_extreme
 example_daily_response$plot_heatmap
 
