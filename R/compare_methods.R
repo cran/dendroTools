@@ -1203,8 +1203,8 @@ df_MLR <- data.frame(m)
 df_MLR_bias <- df_MLR[c(15, 16), c(1: position)]
 df_MLR_rank <- df_MLR[-c(15, 16), c(1: position)]
 df_MLR_avg <- df_MLR[-c(15, 16), c(position + 1, position + 2)]
-rownames(df_MLR_avg) <- c("r_cal", "r_val", "RMSE_cal", "RMSE_val", "RSSE_cal",
-                      "RSSE_val", "d_cal", "d_val", "RE_cal", "RE_val",
+rownames(df_MLR_avg) <- c("r_cal", "r_val", "RMSE_cal", "RMSE_val", "RRSE_cal",
+                      "RRSE_val", "d_cal", "d_val", "RE_cal", "RE_val",
                       "CE_cal", "CE_val", "DE_cal", "DE_val")
 
 listVec <- lapply(list_BRNN, c, recursive = TRUE)
@@ -1216,8 +1216,8 @@ df_BRNN <- data.frame(m)
 df_BRNN_bias <- df_BRNN[c(15, 16), c(1: position)]
 df_BRNN_rank <- df_BRNN[-c(15, 16), c(1: position)]
 df_BRNN_avg <- df_BRNN[-c(15, 16), c(position + 1, position + 2)]
-rownames(df_BRNN_avg) <- c("r_cal", "r_val", "RMSE_cal", "RMSE_val", "RSSE_cal",
-                      "RSSE_val", "d_cal", "d_val", "RE_cal", "RE_val",
+rownames(df_BRNN_avg) <- c("r_cal", "r_val", "RMSE_cal", "RMSE_val", "RRSE_cal",
+                      "RRSE_val", "d_cal", "d_val", "RE_cal", "RE_val",
                       "CE_cal", "CE_val", "DE_cal", "DE_val")
 
 listVec <- lapply(list_MT, c, recursive = TRUE)
@@ -1229,8 +1229,8 @@ df_MT <- data.frame(m)
 df_MT_bias <- df_MT[c(15, 16), c(1: position)]
 df_MT_rank <- df_MT[-c(15, 16), c(1: position)]
 df_MT_avg <- df_MT[-c(15, 16), c(position + 1, position + 2)]
-rownames(df_MT_avg) <- c("r_cal", "r_val", "RMSE_cal", "RMSE_val", "RSSE_cal",
-                      "RSSE_val", "d_cal", "d_val", "RE_cal", "RE_val",
+rownames(df_MT_avg) <- c("r_cal", "r_val", "RMSE_cal", "RMSE_val", "RRSE_cal",
+                      "RRSE_val", "d_cal", "d_val", "RE_cal", "RE_val",
                       "CE_cal", "CE_val", "DE_cal", "DE_val")
 
 
@@ -1243,8 +1243,8 @@ df_RF <- data.frame(m)
 df_RF_bias <- df_RF[c(15, 16), c(1: position)]
 df_RF_rank <- df_RF[-c(15, 16), c(1: position)]
 df_RF_avg <- df_RF[-c(15, 16), c(position + 1, position + 2)]
-rownames(df_RF_avg) <- c("r_cal", "r_val", "RMSE_cal", "RMSE_val", "RSSE_cal",
-                      "RSSE_val", "d_cal", "d_val", "RE_cal", "RE_val",
+rownames(df_RF_avg) <- c("r_cal", "r_val", "RMSE_cal", "RMSE_val", "RRSE_cal",
+                      "RRSE_val", "d_cal", "d_val", "RE_cal", "RE_val",
                       "CE_cal", "CE_val", "DE_cal", "DE_val")
 
 
@@ -1308,8 +1308,8 @@ r_val <- df_all[c(seq(2, nrow(df_all), by = 14)), ]
 RMSE_cal <- df_all[c(seq(3, nrow(df_all), by = 14)), ]
 RMSE_val <- df_all[c(seq(4, nrow(df_all), by = 14)), ]
 
-RSSE_cal <- df_all[c(seq(5, nrow(df_all), by = 14)), ]
-RSSE_val <- df_all[c(seq(6, nrow(df_all), by = 14)), ]
+RRSE_cal <- df_all[c(seq(5, nrow(df_all), by = 14)), ]
+RRSE_val <- df_all[c(seq(6, nrow(df_all), by = 14)), ]
 
 d_cal <- df_all[c(seq(7, nrow(df_all), by = 14)), ]
 d_val <- df_all[c(seq(8, nrow(df_all), by = 14)), ]
@@ -1351,17 +1351,17 @@ shareOne <- data.frame(apply(apply(RMSE_val, 2, rank, ties.method = "min"), 1,
 RMSE_val_ranks <- cbind(AVG_rank, shareOne)
 names(RMSE_val_ranks) <-  c("Mean Rank", "%rank_1")
 
-AVG_rank <- data.frame(rowMeans(apply(RSSE_cal, 2, rank, ties.method = "min")))
-shareOne <- data.frame(apply(apply(RSSE_cal, 2, rank, ties.method = "min"), 1,
+AVG_rank <- data.frame(rowMeans(apply(RRSE_cal, 2, rank, ties.method = "min")))
+shareOne <- data.frame(apply(apply(RRSE_cal, 2, rank, ties.method = "min"), 1,
                              count_ones) /  position)
-RSSE_cal_ranks <- cbind(AVG_rank, shareOne)
-names(RSSE_cal_ranks) <-  c("Mean Rank", "%rank_1")
+RRSE_cal_ranks <- cbind(AVG_rank, shareOne)
+names(RRSE_cal_ranks) <-  c("Mean Rank", "%rank_1")
 
-AVG_rank <- data.frame(rowMeans(apply(RSSE_val, 2, rank, ties.method = "min")))
-shareOne <- data.frame(apply(apply(RSSE_val, 2, rank, ties.method = "min"), 1,
+AVG_rank <- data.frame(rowMeans(apply(RRSE_val, 2, rank, ties.method = "min")))
+shareOne <- data.frame(apply(apply(RRSE_val, 2, rank, ties.method = "min"), 1,
                              count_ones) /  position)
-RSSE_val_ranks <- cbind(AVG_rank, shareOne)
-names(RSSE_val_ranks) <-  c("Mean Rank", "%rank_1")
+RRSE_val_ranks <- cbind(AVG_rank, shareOne)
+names(RRSE_val_ranks) <-  c("Mean Rank", "%rank_1")
 
 AVG_rank <- data.frame(rowMeans(apply(-d_cal, 2, rank, ties.method = "min")))
 shareOne <- data.frame(apply(apply(-d_cal, 2, rank, ties.method = "min"), 1,
@@ -1418,7 +1418,7 @@ names(DE_val_ranks) <-  c("Mean Rank",  "%rank_1")
 # Results are rbinded together
 ranks_together <- rbind(r_cal_ranks, r_val_ranks,
                        RMSE_cal_ranks, RMSE_val_ranks,
-                       RSSE_cal_ranks, RSSE_val_ranks,
+                       RRSE_cal_ranks, RRSE_val_ranks,
                        d_cal_ranks, d_val_ranks,
                        RE_cal_ranks, RE_val_ranks,
                        CE_cal_ranks, CE_val_ranks,
@@ -1936,8 +1936,8 @@ plot_2 <- ggplot(predictions, aes(x = range, y = pred, group = method, colour = 
 
   } else {
 
-  plot_1 <- "transfer functions are not avaliable for regression problems with 2 or more independent variables!"
-  plot_2 <- "Transfer functions are not avaliable for regression problems with 2 or more independent variables!"
+  plot_1 <- "transfer functions are not available for regression problems with 2 or more independent variables!"
+  plot_2 <- "Transfer functions are not available for regression problems with 2 or more independent variables!"
 
   }
 
@@ -2226,7 +2226,7 @@ dataset_central <- dplyr::arrange(dataset, desc(dataset[, -DepIndex]))[(edge_fac
 
 
 } else {
-  edge_results_t <- "No edge data is avaliable for regression problems with more than 1 independent variable."
+  edge_results_t <- "No edge data is available for regression problems with more than 1 independent variable."
 }
 
 # Here, we once again subset the data frames with preformance metrics, to exclude
@@ -2527,8 +2527,8 @@ if (numIND < 2 & edge_share > 0){
     theme_bw() +
     theme(text = element_text(size = 15), axis.title.y = element_blank())
 } else {
-  Residuals_vs_fitted_edge1 <- "No edge data is avaliable for regression problems with 2 or more independent variables."
-  Normal_QQ_edge1 <- "No edge data is avaliable for regression problems with 2 or more independent variables."
+  Residuals_vs_fitted_edge1 <- "No edge data is available for regression problems with 2 or more independent variables."
+  Normal_QQ_edge1 <- "No edge data is available for regression problems with 2 or more independent variables."
 }
 
 

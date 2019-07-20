@@ -49,7 +49,7 @@ basic_example$transfer_functions_together +
 kable(basic_example$parameter_values)
 
 ## ----r, fig.align='center', warning=FALSE, fig.width=8, fig.height=10, fig.cap=paste("Residual diagnostic plots for calibration data: Normal Q-Q plot (left plot) and residuals vs fitted plot (right plot)")----
-# For calibration data, there are residual diagnosti plots avaliable. Similar plots are avaliable also for holdout and edge data. 
+# For calibration data, there are residual diagnosti plots available. Similar plots are available also for holdout and edge data. 
 library(gridExtra)
 grid.arrange(basic_example$normal_QQ_cal, basic_example$residuals_vs_fitted_cal, ncol = 2)
 

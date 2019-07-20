@@ -2,7 +2,7 @@
 #'
 #' Function calculates all possible partial correlation coefficients between
 #' tree-ring chronology and monthly environmental (usually climate) data.
-#' All calculated (partial) correlation coeficients are stored in a matrix.
+#' All calculated (partial) correlation coefficients are stored in a matrix.
 #' The location of stored correlation in the matrix is indicating a window
 #' width (row names) and a location in a
 #' matrix of monthly sequences of environmental data (column names).
@@ -69,7 +69,7 @@
 #' progressively add 1 split at a time and calculate selected metric. For running window,
 #' select the length of running window with the k_running_window argument.
 #' @param k_running_window the length of running window for temporal stability check.
-#' Applicalbe only if temporal_stability argument is set to running window.
+#' Applicable only if temporal_stability argument is set to running window.
 #' @param k integer, number of breaks (splits) for temporal stability and cross validation
 #' analysis.
 #' @param cross_validation_type character string, specifying, how to perform cross validation
@@ -103,7 +103,7 @@
 #'  12 \tab $plot_specific    \tab ggplot2 object: line plot of a row with a selected window width in a matrix of calculated metrics\cr
 #'  13 \tab $PCA_output    \tab princomp object: the result output of the PCA analysis\cr
 #'  14 \tab $type    \tab the character string describing type of analysis: monthly or monthly\cr
-#'  15 \tab $reference_window \tab character string, which referece window was used for calculations
+#'  15 \tab $reference_window \tab character string, which reference window was used for calculations
 #'}
 #'
 #' @export
@@ -199,6 +199,9 @@ monthly_response_seascorr <- function(response, env_data_primary, env_data_contr
  d <- NULL
  env_data_primary_control <- NULL
  metric <- NULL
+
+ temporal_matrix_lower <- NULL
+ temporal_matrix_upper <- NULL
 
  lower_limit = 1
  upper_limit = 12
@@ -472,6 +475,9 @@ monthly_response_seascorr <- function(response, env_data_primary, env_data_contr
                                                    1 + fixed_width/2 ),0))
       }
 
+    temporal_matrix_lower <- temporal_matrix
+    temporal_matrix_upper <- temporal_matrix
+
       pb <- txtProgressBar(min = 0, max = (ncol(env_data_primary) - fixed_width),
                            style = 3)
 
@@ -586,6 +592,9 @@ monthly_response_seascorr <- function(response, env_data_primary, env_data_contr
   # lm or brnn). Calculation is stored in temporal matrix in a proper place.
   # The position of stored calculation is informative later used for
   # indiciating optimal values.
+
+    temporal_matrix_lower <- temporal_matrix
+    temporal_matrix_upper <- temporal_matrix
 
   pb <- txtProgressBar(min = 0, max = (upper_limit - lower_limit),
                        style = 3)
@@ -1327,7 +1336,9 @@ for (m in 1:length(empty_list_datasets)){
                          plot_specific = plot_specificA,
                          PCA_output = PCA_result,
                          type = "monthly",
-                         reference_window = reference_window)
+                         reference_window = reference_window,
+                         boot_lower = temporal_matrix_lower,
+                         boot_upper = temporal_matrix_upper)
     }
 
     if (method == "cor"){
@@ -1342,7 +1353,9 @@ for (m in 1:length(empty_list_datasets)){
                          plot_specific = plot_specificA,
                          PCA_output = PCA_result,
                          type = "monthly",
-                         reference_window = reference_window)
+                         reference_window = reference_window,
+                         boot_lower = temporal_matrix_lower,
+                         boot_upper = temporal_matrix_upper)
     }
 
     class(final_list) <- "dmrs"

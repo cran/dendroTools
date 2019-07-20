@@ -43,6 +43,9 @@ summary.dmrs <- function(object, ...){
     temporal_vector <- data.frame(temporal_vector)
     calculated_metric <- round(max(temporal_vector, na.rm = TRUE), 3)
 
+    lower_bound <- result_daily_response$boot_lower[max_index, as.numeric(max_result)]
+    upper_bound <- result_daily_response$boot_upper[max_index, as.numeric(max_result)]
+
     # Here we remove missing values at the end of the temporal_vector.
     # It is important to remove missing values only at the end of the
     # temporal_vector!
@@ -75,6 +78,8 @@ summary.dmrs <- function(object, ...){
     temporal_vector <- data.frame(temporal_vector)
     calculated_metric <- round(min(temporal_vector, na.rm = TRUE), 3)
 
+    lower_bound <- result_daily_response$boot_lower[min_index, as.numeric(min_result)]
+    upper_bound <- result_daily_response$boot_upper[min_index, as.numeric(min_result)]
     # Here we remove missing values
     # We remove missing values at the end of the temporal_vector.
     # It is important to remove missing values only at the end of the
@@ -117,7 +122,7 @@ summary.dmrs <- function(object, ...){
 
 
   # Here we define a data frame of dates and corresponing day of year (doi). Later
-  # this dataframe will be used to describe tht optimal sequence od days
+  # this dataframe will be used to describe tht optimal sequence of days
   doy <- seq(1:730)
   date <- seq(as.Date('2013-01-01'),as.Date('2014-12-31'), by = "+1 day")
   # date[366] <- as.Date('2015-12-31')
@@ -276,7 +281,7 @@ summary.dmrs <- function(object, ...){
                                     month_string)
 
     # Here we define a data frame of months. Later
-    # this dataframe will be used to describe tht optimal sequence od days
+    # this dataframe will be used to describe tht optimal sequence of days
 
     if (ncol(result_daily_response[[1]]) == 24){
       date_codes <- c("Jan*", "Feb*", "Mar*", "Apr*", "May*", "Jun*", "Jul*", "Aug*", "Sep*", "Oct*", "Nov*", "Dec*",
@@ -311,6 +316,8 @@ summary.dmrs <- function(object, ...){
                                         "metric",
                                         "analysed_years",
                                         "maximal_calculated_metric",
+                                        "lower_ci",
+                                        "upper_ci",
                                         "reference_window",
                                         "analysed_previous_year",
                                         "optimal_time_window",
@@ -321,6 +328,8 @@ summary.dmrs <- function(object, ...){
                                      y_lab,
                                      result_daily_response[[4]],
                                      calculated_metric,
+                                     round(lower_bound, 3),
+                                     round(upper_bound, 3),
                                      reference_string,
                                      previous_year,
                                      Optimal_string,

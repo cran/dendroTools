@@ -1,3 +1,7 @@
+# dendroTools 1.0.6.
+* Bootstrapping of correlation coefficients is introduced. To do so, use the argument boot in daily_response() and monthly_response(). Bootstrapping is currently available only for correlation coefficients. In future version, it will also be available for model fitting. 
+* Package version is changed to 1.0.6
+
 # dendroTools 1.0.5.
 * new function: monthly_response_seascorr()
 * titles of plot_extreme, plot_specific and plot_heatmap are updated
@@ -17,8 +21,8 @@
 * There is new function introduced: KNMI_daily_transform() which transforms daily data obtained from KNMI Climate explorer into data frame suitable for daily_response(). 
 * New TRW chronology is included, swit272
 * New function: monthly_response()
-* New data: Lj_monthly_temperatures
-* New data: Lj_monthly_precipitation
+* New data: LJ_monthly_temperatures
+* New data: LJ_monthly_precipitation
 
 # dendroTools 1.0.2.
 * Package version is changed to 1.0.2
