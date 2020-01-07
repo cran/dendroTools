@@ -51,6 +51,20 @@ plot_heatmap <- function(result_daily_response, reference_window = "start", type
   # Extracting a matrix from a list and converting it into a data frame
   result_daily_element1 <- data.frame(result_daily_response[[1]])
 
+  a <- max(result_daily_element1, na.rm = TRUE)
+  b <- min(result_daily_element1, na.rm = TRUE)
+
+  if (a > 0 & b > 0 | a < 0 & b < 0) {
+
+        paleta <- "viridis"
+  } else {
+
+    paleta <- "no_viridis"
+
+  }
+
+
+
   # Do we have monthly or daily data?
   type = type
 
@@ -135,17 +149,28 @@ plot_heatmap <- function(result_daily_response, reference_window = "start", type
     aes_(x = ~as.numeric(variable), y = ~as.numeric(temp_row_names),
     fill = ~Value)) +
     geom_tile() +
-    scale_fill_gradientn(temp_string,
-                         colours = c("blue", "red", "yellow", "black"),
-      values = rescale(c(bound1, bound2, bound3, bound4)),
-     guide = "colorbar", limits = c(min_limit, max_limit),
-     na.value = "white") +
     xlab("Day of Year") +
     ylab("Window Width") +
     scale_x_continuous(expand = c(0, 0), breaks = sort(c(seq(0, nlevels(result_daily_element1_melted$variable), 50)),
                                                        decreasing = FALSE),
                          labels = sort(c(seq(0, nlevels(result_daily_element1_melted$variable), 50)))) +
     journal_theme)
+
+  if (paleta == "viridis"){
+
+    final_plot <- final_plot + scale_fill_viridis(temp_string, na.value = "white", direction = -1)
+
+  } else {
+
+    final_plot <- final_plot + scale_fill_gradientn(temp_string,
+                                  colours = c("red4", "orange", "cyan", "blue4"),
+                                  values = rescale(c(bound1, bound2, bound3, bound4)),
+                                  guide = "colorbar", limits = c(min_limit, max_limit),
+                                  na.value = "white")
+
+
+  }
+
 
   # Scale_y_continuous is added separately. When there is only a few  rows
   # e.g. fixed_width = TRUE, breaks are specified separately
@@ -196,19 +221,19 @@ plot_heatmap <- function(result_daily_response, reference_window = "start", type
 
   if (type == "monthly"){
 
-    if (ncol(result_daily_response[[1]]) == 12){
 
-    months <- c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
+
+
+
+    if (ncol(result_daily_response[[1]]) <= 12){
+
+      months <- c("J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D")
+
 
     final_plot <- suppressWarnings(ggplot(result_daily_element1_melted,
                                           aes_(x = ~as.numeric(variable), y = ~as.numeric(temp_row_names),
                                                fill = ~Value)) +
                                      geom_tile() +
-                                     scale_fill_gradientn(temp_string,
-                                                          colours = c("blue", "red", "yellow", "black"),
-                                                          values = rescale(c(bound1, bound2, bound3, bound4)),
-                                                          guide = "colorbar", limits = c(min_limit, max_limit),
-                                                          na.value = "white") +
                                      ylab("Number of Consecutive Months") +
                                      xlab("Starting Month of Calculation") +
                                      scale_x_continuous(expand = c(0, 0), breaks = seq(1,12, by = 1),
@@ -217,7 +242,7 @@ plot_heatmap <- function(result_daily_response, reference_window = "start", type
                                      ggtitle(paste0(period_string, method_string)) +
                                      journal_theme)
 
-    } else if (ncol(result_daily_response[[1]]) == 24){
+    } else if (ncol(result_daily_response[[1]]) >= 12){
 
 
       months <- c("J*", "F*", "M*", "A*", "M*", "J*", "J*", "A*", "S*", "O*", "N*", "D*",
@@ -227,11 +252,6 @@ plot_heatmap <- function(result_daily_response, reference_window = "start", type
                                           aes_(x = ~as.numeric(variable), y = ~as.numeric(temp_row_names),
                                                fill = ~Value)) +
                                      geom_tile() +
-                                     scale_fill_gradientn(temp_string,
-                                                          colours = c("blue", "red", "yellow", "black"),
-                                                          values = rescale(c(bound1, bound2, bound3, bound4)),
-                                                          guide = "colorbar", limits = c(min_limit, max_limit),
-                                                          na.value = "white") +
                                      ylab("Number of Consecutive Months") +
                                      xlab("Starting Month of Calculation (Including Previous Year)") +
                                      scale_x_continuous(expand = c(0, 0), breaks = seq(1,24, by = 1),
@@ -243,8 +263,24 @@ plot_heatmap <- function(result_daily_response, reference_window = "start", type
 
   }
 
+    if (paleta == "viridis"){
+
+      final_plot <- final_plot + scale_fill_viridis(temp_string, na.value = "white", direction = -1)
+
+    } else {
+
+      final_plot <- final_plot + scale_fill_gradientn(temp_string,
+                                                      colours = c("red4", "orange", "cyan", "blue4"),
+                                                      values = rescale(c(bound1, bound2, bound3, bound4)),
+                                                      guide = "colorbar", limits = c(min_limit, max_limit),
+                                                      na.value = "white")
+
+
+    }
+
 
   }
+
 
 
   final_plot

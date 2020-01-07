@@ -6,17 +6,18 @@
 \usage{
 monthly_response_seascorr(response, env_data_primary, env_data_control,
   previous_year = FALSE, pcor_method = "pearson",
-  remove_insignificant = TRUE, alpha = 0.05,
-  row_names_subset = FALSE, PCA_transformation = FALSE,
-  log_preprocess = TRUE, components_selection = "automatic",
-  eigenvalues_threshold = 1, N_components = 2,
-  aggregate_function_env_data_primary = "mean",
+  remove_insignificant = TRUE, lower_limit = 1, upper_limit = 12,
+  fixed_width = 0, alpha = 0.05, row_names_subset = FALSE,
+  PCA_transformation = FALSE, log_preprocess = TRUE,
+  components_selection = "automatic", eigenvalues_threshold = 1,
+  N_components = 2, aggregate_function_env_data_primary = "mean",
   aggregate_function_env_data_control = "mean",
   temporal_stability_check = "sequential", k = 2,
   k_running_window = 30, cross_validation_type = "blocked",
   subset_years = NULL, plot_specific_window = NULL, ylimits = NULL,
   seed = NULL, tidy_env_data_primary = FALSE,
-  tidy_env_data_control = FALSE)
+  tidy_env_data_control = FALSE, boot = FALSE, boot_n = 1000,
+  boot_ci_type = "norm", boot_conf_int = 0.95)
 }
 \arguments{
 \item{response}{a data frame with tree-ring proxy variable and (optional)
@@ -53,6 +54,15 @@ coefficient is to be computed. One of "pearson" (default), "kendall", or
 
 \item{remove_insignificant}{if set to TRUE, removes all correlations bellow
 the significant threshold level, based on a selected alpha.}
+
+\item{lower_limit}{lower limit of window width (i.e. number of consecutive months
+to be used for calculations)}
+
+\item{upper_limit}{upper limit of window width (i.e. number of consecutive months
+to be used for calculations)}
+
+\item{fixed_width}{fixed width used for calculations (i.e. number of consecutive
+months to be used for calculations)}
 
 \item{alpha}{significance level used to remove insignificant calculations.}
 
@@ -122,25 +132,37 @@ data frame with three columns: "Year", "Month", "Precipitation/Temperature/etc."
 
 \item{tidy_env_data_control}{if set to TRUE, env_data_control should be inserted as a
 data frame with three columns: "Year", "Month", "Precipitation/Temperature/etc."}
+
+\item{boot}{logical, if TRUE, bootstrap procedure will be used to calculate
+partial correlation coefficients}
+
+\item{boot_n}{The number of bootstrap replicates}
+
+\item{boot_ci_type}{A character string representing the type of bootstrap intervals
+required. The value should be any subset of the values c("norm","basic", "stud",
+"perc", "bca").}
+
+\item{boot_conf_int}{A scalar or vector containing the confidence level(s) of
+the required interval(s)}
 }
 \value{
-a list with 14 elements:
-\tabular{rll}{
- 1 \tab $calculations   \tab a matrix with calculated metrics\cr
- 2 \tab $method \tab the character string of a method \cr
- 3 \tab $metric   \tab the character string indicating the metric used for calculations \cr
- 4 \tab $analysed_period    \tab the character string specifying the analysed period based on the information from row names. If there are no row names, this argument is given as NA \cr
- 5 \tab $optimized_return   \tab data frame with two columns, response variable and aggregated (averaged) monthly data that return the optimal results. This data.frame could be directly used to calibrate a model for climate reconstruction \cr
- 6 \tab $optimized_return_all    \tab a data frame with aggregated monthly data, that returned the optimal result for the entire env_data_primary (and not only subset of analysed years) \cr
- 7 \tab $transfer_function    \tab a ggplot object: scatter plot of optimized return and a transfer line of the selected method \cr
- 8 \tab $temporal_stability    \tab a data frame with calculations of selected metric for different temporal subsets\cr
- 9 \tab $cross_validation   \tab a data frame with cross validation results \cr
- 10 \tab $plot_heatmap    \tab ggplot2 object: a heatmap of calculated metrics\cr
- 11 \tab $plot_extreme    \tab ggplot2 object: line plot of a row with the highest value in a matrix of calculated metrics\cr
- 12 \tab $plot_specific    \tab ggplot2 object: line plot of a row with a selected window width in a matrix of calculated metrics\cr
- 13 \tab $PCA_output    \tab princomp object: the result output of the PCA analysis\cr
- 14 \tab $type    \tab the character string describing type of analysis: monthly or monthly\cr
- 15 \tab $reference_window \tab character string, which reference window was used for calculations
+a list with 15 elements:
+\enumerate{
+ \item $calculations - a matrix with calculated metrics
+ \item $method - the character string of a method
+ \item $metric - the character string indicating the metric used for calculations
+ \item $analysed_period - the character string specifying the analysed period based on the information from row names. If there are no row names, this argument is given as NA
+ \item $optimized_return - data frame with two columns, response variable and aggregated (averaged) monthly data that return the optimal results. This data.frame could be directly used to calibrate a model for climate reconstruction
+ \item $optimized_return_all - a data frame with aggregated monthly data, that returned the optimal result for the entire env_data_primary (and not only subset of analysed years)
+ \item $transfer_function - a ggplot object: scatter plot of optimized return and a transfer line of the selected method
+ \item $temporal_stability - a data frame with calculations of selected metric for different temporal subsets
+ \item $cross_validation - a data frame with cross validation results
+ \item $plot_heatmap - ggplot2 object: a heatmap of calculated metrics
+ \item $plot_extreme - ggplot2 object: line plot of a row with the highest value in a matrix of calculated metrics
+ \item $plot_specific - ggplot2 object: line plot of a row with a selected window width in a matrix of calculated metrics
+ \item $PCA_output - princomp object: the result output of the PCA analysis
+ \item $type - the character string describing type of analysis: monthly or monthly
+ \item $reference_window - character string, which reference window was used for calculations
 }
 }
 \description{
@@ -167,40 +189,43 @@ data(LJ_monthly_precipitation)
 
 # 1 Basic example
 example_basic <- monthly_response_seascorr(response = data_MVA,
-                          env_data_primary = LJ_monthly_temperatures,
-                          env_data_control = LJ_monthly_precipitation,
-                          row_names_subset = TRUE,
-                          remove_insignificant = TRUE,
-                          aggregate_function_env_data_primary = 'median',
-                          aggregate_function_env_data_control = 'median',
-                          alpha = 0.05, pcor_method = "spearman",
-                          tidy_env_data_primary = FALSE,
-                          tidy_env_data_control = TRUE,
-                          previous_year = TRUE)
+   fixed_width = 11,
+   env_data_primary = LJ_monthly_temperatures,
+   env_data_control = LJ_monthly_precipitation,
+   row_names_subset = TRUE,
+   remove_insignificant = TRUE,
+   aggregate_function_env_data_primary = 'median',
+   aggregate_function_env_data_control = 'median',
+   alpha = 0.05, pcor_method = "spearman",
+   tidy_env_data_primary = FALSE,
+   tidy_env_data_control = TRUE,
+   previous_year = TRUE)
+
 summary(example_basic)
-example_basic$plot_extreme
-example_basic$plot_heatmap
-example_basic$plot_specific
+plot(example_basic, type = 1)
+plot(example_basic, type = 2)
+plot(example_basic, type = 3)
 example_basic$optimized_return
 example_basic$optimized_return_all
 
 
 # 2 Extended example
 example_extended <- monthly_response_seascorr(response = data_MVA,
-                          env_data_primary = LJ_monthly_temperatures,
-                          env_data_control = LJ_monthly_precipitation,
-                          row_names_subset = TRUE,
-                          remove_insignificant = TRUE,
-                          aggregate_function_env_data_primary = 'mean',
-                          aggregate_function_env_data_control = 'mean',
-                          alpha = 0.05,
-                          tidy_env_data_primary = FALSE,
-                          tidy_env_data_control = TRUE)
+   env_data_primary = LJ_monthly_temperatures,
+   env_data_control = LJ_monthly_precipitation,
+   row_names_subset = TRUE,
+   remove_insignificant = TRUE,
+   aggregate_function_env_data_primary = 'mean',
+   aggregate_function_env_data_control = 'mean',
+   alpha = 0.05,
+   tidy_env_data_primary = FALSE,
+   tidy_env_data_control = TRUE)
 
-example_extended$plot_extreme
-example_extended$plot_heatmap
-example_extended$optimized_return
-example_extended$optimized_return_all
+summary(example_fixed_width)
+plot(example_fixed_width, type = 1)
+plot(example_fixed_width, type = 2)
+example_fixed_width$optimized_return
+example_fixed_width$optimized_return_all
 
 }
 }

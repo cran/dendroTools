@@ -4,9 +4,10 @@
 \alias{monthly_response}
 \title{monthly_response}
 \usage{
-monthly_response(response, env_data, method = "lm",
+monthly_response(response, env_data, method = "cor",
   metric = "r.squared", cor_method = "pearson",
-  previous_year = FALSE, neurons = 1, brnn_smooth = TRUE,
+  previous_year = FALSE, neurons = 1, lower_limit = 1,
+  upper_limit = 12, fixed_width = 0, brnn_smooth = TRUE,
   remove_insignificant = TRUE, alpha = 0.05,
   row_names_subset = FALSE, PCA_transformation = FALSE,
   log_preprocess = TRUE, components_selection = "automatic",
@@ -48,6 +49,15 @@ selected statistical metric.}
 
 \item{neurons}{positive integer that indicates the number of neurons used
 for brnn method}
+
+\item{lower_limit}{lower limit of window width (i.e. number of consecutive months
+to be used for calculations)}
+
+\item{upper_limit}{upper limit of window width (i.e. number of consecutive months
+to be used for calculations)}
+
+\item{fixed_width}{fixed width used for calculations (i.e. number of consecutive
+months to be used for calculations)}
 
 \item{brnn_smooth}{if set to TRUE, a smoothing algorithm is applied that
 removes unrealistic calculations which are a result of neural net failure.}
@@ -132,24 +142,24 @@ the required interval(s)}
 }
 \value{
 a list with 17 elements:
-\tabular{rll}{
- 1 \tab $calculations   \tab a matrix with calculated metrics\cr
- 2 \tab $method \tab the character string of a method \cr
- 3 \tab $metric   \tab the character string indicating the metric used for calculations \cr
- 4 \tab $analysed_period    \tab the character string specifying the analysed period based on the information from row names. If there are no row names, this argument is given as NA \cr
- 5 \tab $optimized_return   \tab data frame with two columns, response variable and aggregated (averaged) monthly data that return the optimal results. This data.frame could be directly used to calibrate a model for climate reconstruction \cr
- 6 \tab $optimized_return_all    \tab a data frame with aggregated monthly data, that returned the optimal result for the entire env_data (and not only subset of analysed years) \cr
- 7 \tab $transfer_function    \tab a ggplot object: scatter plot of optimized return and a transfer line of the selected method \cr
- 8 \tab $temporal_stability    \tab a data frame with calculations of selected metric for different temporal subsets\cr
- 9\tab $cross_validation   \tab a data frame with cross validation results \cr
- 10 \tab $plot_heatmap    \tab ggplot2 object: a heatmap of calculated metrics\cr
- 11 \tab $plot_extreme    \tab ggplot2 object: line or bar plot of a row with the highest value in a matrix of calculated metrics\cr
- 12 \tab $plot_specific    \tab not available for monthly_response() \cr
- 13 \tab $PCA_output    \tab princomp object: the result output of the PCA analysis\cr
- 14 \tab $type    \tab the character string describing type of analysis: daily or monthly\cr
- 15 \tab $reference_window \tab character string, which reference window was used for calculations\cr
- 16 \tab $boot_lower \tab matrix with lower limit of confidence intervals of bootstrap calculations \cr
- 17 \tab $boot_upper \tab matrix with upper limit of confidence intervals of bootstrap calculations
+\enumerate{
+ \item $calculations - a matrix with calculated metrics
+ \item $method - the character string of a method
+ \item $metric - the character string indicating the metric used for calculations
+ \item $analysed_period - the character string specifying the analysed period based on the information from row names. If there are no row names, this argument is given as NA
+ \item $optimized_return - data frame with two columns, response variable and aggregated (averaged) monthly data that return the optimal results. This data.frame could be directly used to calibrate a model for climate reconstruction
+ \item $optimized_return_all - a data frame with aggregated monthly data, that returned the optimal result for the entire env_data (and not only subset of analysed years)
+ \item $transfer_function - a ggplot object: scatter plot of optimized return and a transfer line of the selected method
+ \item $temporal_stability - a data frame with calculations of selected metric for different temporal subsets
+ \item $cross_validation - a data frame with cross validation results
+ \item $plot_heatmap - ggplot2 object: a heatmap of calculated metrics
+ \item $plot_extreme - ggplot2 object: line or bar plot of a row with the highest value in a matrix of calculated metrics
+ \item $plot_specific - not available for monthly_response()
+ \item $PCA_output - princomp object: the result output of the PCA analysis
+ \item $type - the character string describing type of analysis: daily or monthly
+ \item $reference_window - character string, which reference window was used for calculations
+ \item $boot_lower - matrix with lower limit of confidence intervals of bootstrap calculations
+ \item $boot_upper - matrix with upper limit of confidence intervals of bootstrap calculations
 }
 }
 \description{
@@ -176,52 +186,58 @@ data(LJ_monthly_temperatures)
 data(LJ_monthly_precipitation)
 
 # 1 Example with tidy precipitation data
-example_tidy_data <- monthly_response(response = data_MVA, env_data = LJ_monthly_precipitation,
-                                     method = "lm", row_names_subset = TRUE,
-                                     remove_insignificant = TRUE, previous_year = TRUE,
-                                     alpha = 0.05, aggregate_function = 'sum',
-                                     tidy_env_data = TRUE, boot = FALSE)
+example_tidy_data <- monthly_response(response = data_MVA,
+    lower_limit = 1, upper = 12,
+    env_data = LJ_monthly_precipitation, fixed_width = 0,
+    method = "cor", row_names_subset = TRUE, metric = "adj.r.squared",
+    remove_insignificant = TRUE, previous_year = FALSE,
+    alpha = 0.05, aggregate_function = 'sum', boot = TRUE,
+    tidy_env_data = TRUE, boot_n = 100)
+
 summary(example_tidy_data)
-example_tidy_data$plot_extreme
-example_tidy_data$plot_heatmap
+plot(example_tidy_data, type = 1)
+plot(example_tidy_data, type = 2)
 
 # 2 Example with splited data for past and present
-example_MVA_past <- monthly_response(response = data_MVA, env_data = LJ_monthly_temperatures,
-                                     method = "cor", row_names_subset = TRUE, previous_year = TRUE,
-                                     remove_insignificant = TRUE, alpha = 0.05,
-                                     subset_years = c(1940, 1980), aggregate_function = 'mean')
+example_MVA_past <- monthly_response(response = data_MVA,
+    env_data = LJ_monthly_temperatures,
+    method = "cor", row_names_subset = TRUE, previous_year = TRUE,
+    remove_insignificant = TRUE, alpha = 0.05,
+    subset_years = c(1940, 1980), aggregate_function = 'mean')
 
-example_MVA_present <- monthly_response(response = data_MVA, env_data = LJ_monthly_temperatures,
-                                      method = "cor", row_names_subset = TRUE, alpha = 0.05,
-                                      previous_year = TRUE, remove_insignificant = TRUE,
-                                      subset_years = c(1981, 2010), aggregate_function = 'mean')
+example_MVA_present <- monthly_response(response = data_MVA,
+    env_data = LJ_monthly_temperatures,
+    method = "cor", row_names_subset = TRUE, alpha = 0.05,
+    previous_year = TRUE, remove_insignificant = TRUE,
+    subset_years = c(1981, 2010), aggregate_function = 'mean')
+
 summary(example_MVA_present)
-example_MVA_past$plot_heatmap
-example_MVA_present$plot_heatmap
-example_MVA_past$plot_extreme
-example_MVA_present$plot_extreme
+plot(example_MVA_past, type = 1)
+plot(example_MVA_present, type = 1)
+plot(example_MVA_past, type = 2)
+plot(example_MVA_present, type = 2)
 
 
 # 3 Example with principal component analysis
 example_PCA <- monthly_response(response = example_proxies_individual,
-                              env_data = LJ_monthly_temperatures, method = "lm",
-                              row_names_subset = TRUE, remove_insignificant = TRUE,
-                              alpha = 0.01, PCA_transformation = TRUE, previous_year = TRUE,
-                              components_selection = "manual", N_components = 2)
+   env_data = LJ_monthly_temperatures, method = "lm",
+   row_names_subset = TRUE, remove_insignificant = TRUE,
+   alpha = 0.01, PCA_transformation = TRUE, previous_year = TRUE,
+   components_selection = "manual", N_components = 2, boot = TRUE)
 
 summary(example_PCA$PCA_output)
-example_PCA$plot_heatmap
-example_PCA$plot_extreme
+plot(example_PCA, type = 1)
+plot(example_PCA, type = 2)
 
 # 4 Example negative correlations
 example_neg_cor <- monthly_response(response = data_TRW_1, alpha = 0.05,
-                                    env_data = LJ_monthly_temperatures,
-                                    method = "cor", row_names_subset = TRUE,
-                                    remove_insignificant = TRUE)
+   env_data = LJ_monthly_temperatures,
+   method = "cor", row_names_subset = TRUE,
+   remove_insignificant = TRUE, boot = TRUE)
 
 summary(example_neg_cor)
-example_neg_cor$plot_heatmap
-example_neg_cor$plot_extreme
+plot(example_neg_cor, type = 1)
+plot(example_neg_cor, type = 2)
 example_neg_cor$temporal_stability
 
 # 5 Example of multiproxy analysis
@@ -229,19 +245,20 @@ summary(example_proxies_1)
 cor(example_proxies_1)
 
 example_multiproxy <- monthly_response(response = example_proxies_1,
-                                     env_data = LJ_monthly_temperatures,
-                                     method = "lm", metric = "adj.r.squared",
-                                     row_names_subset = TRUE, previous_year = FALSE,
-                                     remove_insignificant = TRUE, alpha = 0.05)
+   env_data = LJ_monthly_temperatures,
+   method = "lm", metric = "adj.r.squared",
+   row_names_subset = TRUE, previous_year = FALSE,
+   remove_insignificant = TRUE, alpha = 0.05)
 
 summary(example_multiproxy)
-example_multiproxy$plot_heatmap
+plot(example_multiproxy, type = 1)
 
 # 6 Example to test the temporal stability
-example_MVA_ts <- monthly_response(response = data_MVA, env_data = LJ_monthly_temperatures,
-method = "lm", metric = "adj.r.squared", row_names_subset = TRUE,
-remove_insignificant = TRUE, alpha = 0.05,
-temporal_stability_check = "running_window", k_running_window = 10)
+example_MVA_ts <- monthly_response(response = data_MVA,
+   env_data = LJ_monthly_temperatures,
+   method = "lm", metric = "adj.r.squared", row_names_subset = TRUE,
+   remove_insignificant = TRUE, alpha = 0.05,
+   temporal_stability_check = "running_window", k_running_window = 10)
 
 summary(example_MVA_ts)
 example_MVA_ts$temporal_stability
