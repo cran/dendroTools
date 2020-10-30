@@ -7,7 +7,7 @@ data(LJ_daily_temperatures)
 glimpse_daily_data(env_data = LJ_daily_temperatures, tidy_env_data = FALSE, na.color = "white")
 
 
-## ---- results = 'hide'---------------------------------------------------
+## ---- results = 'hide'--------------------------------------------------------
 # Load the dendroTools R package
 library(dendroTools)
 
@@ -25,7 +25,7 @@ example_fixed_width <- daily_response(response = data_MVA, env_data = LJ_daily_t
 ## ---- fig.align='center', fig.width=8, fig.height=5, fig.cap=paste("Figure 2: The MVA parameter contains the optimal temperature signal from March 14 (DOY 73) to May 12 (DOY 132).")----
 example_fixed_width$plot_extreme
 
-## ---- results = 'hide'---------------------------------------------------
+## ---- results = 'hide'--------------------------------------------------------
 # Load the dendroTools R package
 library(dendroTools)
 
@@ -58,7 +58,7 @@ example_MVA_past$plot_specific
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 6: The temporal correlations for pre-defined window of 60 days for present years")----
 example_MVA_present$plot_specific
 
-## ---- results = 'hide'---------------------------------------------------
+## ---- results = 'hide'--------------------------------------------------------
 # Load the dendroTools R package
 library(dendroTools)
 
@@ -74,14 +74,14 @@ example_PCA <- daily_response(response = example_proxies_individual,
                               alpha = 0.01, PCA_transformation = TRUE,
                               components_selection = "manual", N_components = 2)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 # Get the summary statistics for the PCA
 summary(example_PCA$PCA_output)
 
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 7: The temporal pattern for the r.squared. The highest coefficients of determination were calculated for DOY around 90 with span of 2 months.")----
 example_PCA$plot_heatmap
 
-## ---- results = 'hide'---------------------------------------------------
+## ---- results = 'hide'--------------------------------------------------------
 # Load the dendroTools R package
 library(dendroTools)
 
@@ -102,11 +102,11 @@ example_neg_cor$plot_heatmap
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 9: The highest calculated correlation coefficient.")----
 example_neg_cor$plot_extreme
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 # The temporal stability of correlations
 example_neg_cor$temporal_stability
 
-## ---- results = 'hide'---------------------------------------------------
+## ---- results = 'hide'--------------------------------------------------------
 # Load the dendroTools R package
 library(dendroTools)
 
@@ -125,21 +125,21 @@ example_reconstruction_lin <- daily_response(response = data_TRW,
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 10: The highest calculated coefficient of determination.")----
 example_reconstruction_lin$plot_extreme
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 example_reconstruction_lin$temporal_stability
 example_reconstruction_lin$cross_validation
 
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 11: Linear transfer function")----
 example_reconstruction_lin$transfer_function
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 linear_model <- lm(Optimized_return ~ TRW, data = example_reconstruction_lin$optimized_return)
 reconstruction <- data.frame(predictions = predict(linear_model, newdata = data_TRW))
 
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 12: The reconstructed average temperature May 15 - June 27 with linear model")----
 plot(row.names(data_TRW), reconstruction$predictions, type = "l", xlab = "Year", ylab = "Mean temperature May 15 - Jun 27 [ºC]")
 
-## ---- results = 'hide'---------------------------------------------------
+## ---- results = 'hide'--------------------------------------------------------
 # Load the dendroTools and brnn R package
 library(dendroTools)
 library(brnn)
@@ -160,14 +160,14 @@ example_reconstruction_brnn <- daily_response(response = data_TRW,
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 13: The highest calculated coefficient of determination for the brnn model.")----
 example_reconstruction_brnn$plot_extreme
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 example_reconstruction_brnn$temporal_stability
 example_reconstruction_brnn$cross_validation
 
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 14: Nonlinear brnn transfer function")----
 example_reconstruction_brnn$transfer_function
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 brnn_model <- brnn(Optimized_return ~ TRW, data = example_reconstruction_brnn$optimized_return)
 reconstruction <- data.frame(predictions = predict(brnn_model, newdata = data_TRW))
 
@@ -175,7 +175,7 @@ reconstruction <- data.frame(predictions = predict(brnn_model, newdata = data_TR
 plot(row.names(data_TRW),reconstruction$predictions, type = "l", xlab = "Year",
      ylab = "Mean temperature May 15 - Jun 27 [ºC]")
 
-## ---- results = 'hide'---------------------------------------------------
+## ---- results = 'hide'--------------------------------------------------------
 # Load the dendroTools and brnn R package
 library(dendroTools)
 
@@ -205,7 +205,7 @@ grid.arrange(example_MVA_TEMP$plot_heatmap, example_MVA_PREC$plot_heatmap)
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=10, fig.cap=paste("Figure 17: The highest calculated correlations for temperatures (upper plot) and precipitation (lower plot)")----
 grid.arrange(example_MVA_TEMP$plot_extreme, example_MVA_PREC$plot_extreme)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 # Load the dendroTools and brnn R package
 library(dendroTools)
 
@@ -216,10 +216,10 @@ data(LJ_daily_temperatures)
 # Summary of the example_proxies_1 data frame
 summary(example_proxies_1)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 cor(example_proxies_1)
 
-## ---- results = 'hide'---------------------------------------------------
+## ---- results = 'hide'--------------------------------------------------------
 example_multiproxy <- daily_response(response = example_proxies_1, 
                                      env_data = LJ_daily_temperatures, 
                                      method = "lm", metric = "adj.r.squared", 
@@ -230,10 +230,10 @@ example_multiproxy <- daily_response(response = example_proxies_1,
 ## ---- fig.align='center', warning=FALSE, fig.width=8, fig.height=5, fig.cap=paste("Figure 18: The temporal pattern of r squared for the multiproxy example)")----
 example_multiproxy$plot_heatmap
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 liner_model <- lm(Optimized_return ~ ., data = example_multiproxy$optimized_return)
 summary(liner_model)
 
-## ------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 example_multiproxy$transfer_function
 
