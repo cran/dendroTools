@@ -1,6 +1,6 @@
-41b6150c020613c19086ff451df498f0 *DESCRIPTION
+f43bc48ceb313f2bcb8635c625e8c896 *DESCRIPTION
 598d27fa31b91ca8b383866681571e36 *NAMESPACE
-48dc1814cf1ba1ae1fca22f50b030636 *NEWS.md
+993b2e7d1e9ae92bcbd12e328198608e *NEWS.md
 64952101cabc10d48d5e2107d06dc6cc *R/KRE_daily_temperatures.R
 25fe30e5351048a274c8ca9aaca29222 *R/LJ_daily_precipitation.R
 8effac089e6b91c82b9515eab7a7dcf7 *R/LJ_daily_temperatures.R
@@ -42,7 +42,7 @@ db6a23b9f992a9137a0833021b2f5855 *R/swit272.R
 aed66d1ced5bf26b360466cb8b77b92c *R/swit272_daily_precipitation.R
 d140e45938636253247958f8732f8c66 *R/swit272_daily_temperatures.R
 61fd016dbb3a138efc0852a73195a27b *R/years_to_rownames.R
-e7cc39d11600c06f88479c551facb47e *build/vignette.rds
+4ddd282a3dcdca90904efcae1a32d7fe *build/vignette.rds
 23059183442046aaa444327b461446b7 *data/KRE_daily_temperatures.rda
 4aaf6977224ac419b169ee799bdc40ea *data/LJ_daily_precipitation.rda
 3eb56c682bd3abcd0b49eca09003efe0 *data/LJ_daily_temperatures.rda
@@ -64,10 +64,10 @@ e20bfb8bee7a1b0d31d3bf13ac4a765a *data/swit272_daily_precipitation.rda
 9574fd1c23c9524cd136058c91762936 *inst/CITATION
 2cca7774c4a2e504eeb9dea26f9f7143 *inst/doc/Compare_different_regression_methods.R
 58c36052ee70e2d9f7766287bf3e2bda *inst/doc/Compare_different_regression_methods.Rmd
-ee760cced63b84311945df7ff15b07c7 *inst/doc/Compare_different_regression_methods.html
-aa4ad575f6f639e05062731f7997b697 *inst/doc/Examples_with_daily_climate_data.R
-74552893855beecd544a9670b713c37b *inst/doc/Examples_with_daily_climate_data.Rmd
-67387ac9bc1958cb1b3c3d01d7e8d179 *inst/doc/Examples_with_daily_climate_data.html
+18dd0b819c071eb03eb139a2a29c778a *inst/doc/Compare_different_regression_methods.html
+37f0c73f4012de809525d5176a45c9ad *inst/doc/Examples_with_daily_climate_data.R
+e4dbbc5283395b2592d76335429c534c *inst/doc/Examples_with_daily_climate_data.Rmd
+43f0c0fa0384612e320aaf034e3f4ea8 *inst/doc/Examples_with_daily_climate_data.html
 9762b784f2a85a36b20c1ea18612e2bc *man/KRE_daily_temperatures.Rd
 682d9033c830e74d41ec9cf4f0a8f3bd *man/LJ_daily_precipitation.Rd
 86f619b4db7ee58bf64298c82d7e8ce4 *man/LJ_daily_temperatures.Rd
@@ -110,4 +110,4 @@ f4438b8cfac19cf0132676cbeee0994f *man/years_to_rownames.Rd
 b79b7b54a9f3005910bf7039d5bbe681 *tests/testthat.R
 b1ce5ec1f18eb2f1d8c46ae678862c9f *tests/testthat/test_general.R
 58c36052ee70e2d9f7766287bf3e2bda *vignettes/Compare_different_regression_methods.Rmd
-74552893855beecd544a9670b713c37b *vignettes/Examples_with_daily_climate_data.Rmd
+e4dbbc5283395b2592d76335429c534c *vignettes/Examples_with_daily_climate_data.Rmd
