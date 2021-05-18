@@ -496,6 +496,19 @@ daily_response <- function(response, env_data, method = "lm",
     }
 
     subset_seq <- seq(lower_subset, upper_subset)
+
+    if (any(!(subset_seq %in% row.names(response)))){
+
+      stop(paste0("Undefined columns selected. Subset years don't exist",
+                  " in the response data frame. Change the subset_years argument"))
+    }
+
+    if (any(!(subset_seq %in% row.names(env_data)))){
+
+      stop(paste0("Undefined columns selected. Subset years don't exist",
+                  " in the env_data data frame. Change the subset_years argument"))
+    }
+
     response <- subset(response, row.names(response) %in% subset_seq)
     env_data <- subset(env_data, row.names(env_data) %in% subset_seq)
     }
@@ -599,8 +612,37 @@ daily_response <- function(response, env_data, method = "lm",
             temporal_upper <- NA
 
           } else {
-            temporal_lower <- ci_int$norm[2]
-            temporal_upper <- ci_int$norm[3]
+
+            if (boot_ci_type == "norm"){
+
+              temporal_lower <- ci_int$norm[2]
+              temporal_upper <- ci_int$norm[3]
+
+            } else if (boot_ci_type == "perc"){
+
+              temporal_lower <- ci_int$perc[4]
+              temporal_upper <- ci_int$perc[5]
+
+            } else if (boot_ci_type == "stud") {
+
+              temporal_lower <- ci_int$student[4]
+              temporal_upper <- ci_int$student[5]
+
+            } else if (boot_ci_type == "basic") {
+
+              temporal_lower <- ci_int$basic[4]
+              temporal_upper <- ci_int$basic[5]
+
+            } else if (boot_ci_type == "bca") {
+
+              temporal_lower <- ci_int$bca[4]
+              temporal_upper <- ci_int$bca[5]
+
+            } else {
+
+              stop("boot_ci_type should be 'norm', 'perc', 'stud', 'basic' or 'bca'")
+
+            }
           }
         } else {
           print(paste0("boot should be TRUE or FALSE, instead it is ", boot))
@@ -739,10 +781,46 @@ daily_response <- function(response, env_data, method = "lm",
 
         } else {
 
-          temporal_r_squared_lower <- ci_int_r_squared$norm[2]
-          temporal_r_squared_upper <- ci_int_r_squared$norm[3]
-          temporal_adj_r_squared_lower <- ci_int_adj_r_squared$norm[2]
-          temporal_adj_r_squared_upper <- ci_int_adj_r_squared$norm[3]
+          if (boot_ci_type == "norm"){
+
+            temporal_r_squared_lower <- ci_int_r_squared$norm[2]
+            temporal_r_squared_upper <- ci_int_r_squared$norm[3]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$norm[2]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$norm[3]
+
+          } else if (boot_ci_type == "perc"){
+
+            temporal_r_squared_lower <- ci_int_r_squared$perc[4]
+            temporal_r_squared_upper <- ci_int_r_squared$perc[5]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$perc[4]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$perc[5]
+
+          } else if (boot_ci_type == "stud") {
+
+            temporal_r_squared_lower <- ci_int_r_squared$studen[4]
+            temporal_r_squared_upper <- ci_int_r_squared$studen[5]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$studen[4]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$studen[5]
+
+          } else if (boot_ci_type == "basic") {
+
+            temporal_r_squared_lower <- ci_int_r_squared$basic[4]
+            temporal_r_squared_upper <- ci_int_r_squared$basic[5]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$basic[4]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$basic[5]
+
+          } else if (boot_ci_type == "bca") {
+
+            temporal_r_squared_lower <- ci_int_r_squared$bca[4]
+            temporal_r_squared_upper <- ci_int_r_squared$bca[5]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$bca[4]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$bca[5]
+
+          } else {
+
+            stop("boot_ci_type should be 'norm', 'perc', 'stud', 'basic' or 'bca'")
+
+          }
 
        }
 
@@ -921,11 +999,46 @@ daily_response <- function(response, env_data, method = "lm",
 
         } else {
 
-          temporal_r_squared_lower <- ci_int_r_squared$norm[2]
-          temporal_r_squared_upper <- ci_int_r_squared$norm[3]
+          if (boot_ci_type == "norm"){
 
-          temporal_adj_r_squared_lower <- ci_int_adj_r_squared$norm[2]
-          temporal_adj_r_squared_upper <- ci_int_adj_r_squared$norm[3]
+            temporal_r_squared_lower <- ci_int_r_squared$norm[2]
+            temporal_r_squared_upper <- ci_int_r_squared$norm[3]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$norm[2]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$norm[3]
+
+          } else if (boot_ci_type == "perc"){
+
+            temporal_r_squared_lower <- ci_int_r_squared$perc[4]
+            temporal_r_squared_upper <- ci_int_r_squared$perc[5]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$perc[4]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$perc[5]
+
+          } else if (boot_ci_type == "stud") {
+
+            temporal_r_squared_lower <- ci_int_r_squared$studen[4]
+            temporal_r_squared_upper <- ci_int_r_squared$studen[5]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$studen[4]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$studen[5]
+
+          } else if (boot_ci_type == "basic") {
+
+            temporal_r_squared_lower <- ci_int_r_squared$basic[4]
+            temporal_r_squared_upper <- ci_int_r_squared$basic[5]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$basic[4]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$basic[5]
+
+          } else if (boot_ci_type == "bca") {
+
+            temporal_r_squared_lower <- ci_int_r_squared$bca[4]
+            temporal_r_squared_upper <- ci_int_r_squared$bca[5]
+            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$bca[4]
+            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$bca[5]
+
+          } else {
+
+            stop("boot_ci_type should be 'norm', 'perc', 'stud', 'basic' or 'bca'")
+
+          }
 
         }
 
@@ -1080,8 +1193,37 @@ daily_response <- function(response, env_data, method = "lm",
           temporal_upper <- NA
 
         } else {
-          temporal_lower <- ci_int$norm[2]
-          temporal_upper <- ci_int$norm[3]
+
+          if (boot_ci_type == "norm"){
+
+            temporal_lower <- ci_int$norm[2]
+            temporal_upper <- ci_int$norm[3]
+
+          } else if (boot_ci_type == "perc"){
+
+            temporal_lower <- ci_int$perc[4]
+            temporal_upper <- ci_int$perc[5]
+
+          } else if (boot_ci_type == "stud") {
+
+            temporal_lower <- ci_int$student[4]
+            temporal_upper <- ci_int$student[5]
+
+          } else if (boot_ci_type == "basic") {
+
+            temporal_lower <- ci_int$basic[4]
+            temporal_upper <- ci_int$basic[5]
+
+          } else if (boot_ci_type == "bca") {
+
+            temporal_lower <- ci_int$bca[4]
+            temporal_upper <- ci_int$bca[5]
+
+          } else {
+
+            stop("boot_ci_type should be 'norm', 'perc', 'stud', 'basic' or 'bca'")
+
+          }
         }
       } else {
       print(paste0("boot should be TRUE or FALSE, instead it is ", boot))
@@ -1202,10 +1344,46 @@ daily_response <- function(response, env_data, method = "lm",
 
           } else {
 
-            temporal_r_squared_lower <- ci_int_r_squared$norm[2]
-            temporal_r_squared_upper <- ci_int_r_squared$norm[3]
-            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$norm[2]
-            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$norm[3]
+            if (boot_ci_type == "norm"){
+
+              temporal_r_squared_lower <- ci_int_r_squared$norm[2]
+              temporal_r_squared_upper <- ci_int_r_squared$norm[3]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$norm[2]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$norm[3]
+
+            } else if (boot_ci_type == "perc"){
+
+              temporal_r_squared_lower <- ci_int_r_squared$perc[4]
+              temporal_r_squared_upper <- ci_int_r_squared$perc[5]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$perc[4]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$perc[5]
+
+            } else if (boot_ci_type == "stud") {
+
+              temporal_r_squared_lower <- ci_int_r_squared$studen[4]
+              temporal_r_squared_upper <- ci_int_r_squared$studen[5]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$studen[4]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$studen[5]
+
+            } else if (boot_ci_type == "basic") {
+
+              temporal_r_squared_lower <- ci_int_r_squared$basic[4]
+              temporal_r_squared_upper <- ci_int_r_squared$basic[5]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$basic[4]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$basic[5]
+
+            } else if (boot_ci_type == "bca") {
+
+              temporal_r_squared_lower <- ci_int_r_squared$bca[4]
+              temporal_r_squared_upper <- ci_int_r_squared$bca[5]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$bca[4]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$bca[5]
+
+            } else {
+
+              stop("boot_ci_type should be 'norm', 'perc', 'stud', 'basic' or 'bca'")
+
+            }
 
           }
 
@@ -1373,11 +1551,46 @@ daily_response <- function(response, env_data, method = "lm",
 
           } else {
 
-            temporal_r_squared_lower <- ci_int_r_squared$norm[2]
-            temporal_r_squared_upper <- ci_int_r_squared$norm[3]
+            if (boot_ci_type == "norm"){
 
-            temporal_adj_r_squared_lower <- ci_int_adj_r_squared$norm[2]
-            temporal_adj_r_squared_upper <- ci_int_adj_r_squared$norm[3]
+              temporal_r_squared_lower <- ci_int_r_squared$norm[2]
+              temporal_r_squared_upper <- ci_int_r_squared$norm[3]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$norm[2]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$norm[3]
+
+            } else if (boot_ci_type == "perc"){
+
+              temporal_r_squared_lower <- ci_int_r_squared$perc[4]
+              temporal_r_squared_upper <- ci_int_r_squared$perc[5]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$perc[4]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$perc[5]
+
+            } else if (boot_ci_type == "stud") {
+
+              temporal_r_squared_lower <- ci_int_r_squared$studen[4]
+              temporal_r_squared_upper <- ci_int_r_squared$studen[5]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$studen[4]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$studen[5]
+
+            } else if (boot_ci_type == "basic") {
+
+              temporal_r_squared_lower <- ci_int_r_squared$basic[4]
+              temporal_r_squared_upper <- ci_int_r_squared$basic[5]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$basic[4]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$basic[5]
+
+            } else if (boot_ci_type == "bca") {
+
+              temporal_r_squared_lower <- ci_int_r_squared$bca[4]
+              temporal_r_squared_upper <- ci_int_r_squared$bca[5]
+              temporal_adj_r_squared_lower <- ci_int_adj_r_squared$bca[4]
+              temporal_adj_r_squared_upper <- ci_int_adj_r_squared$bca[5]
+
+            } else {
+
+              stop("boot_ci_type should be 'norm', 'perc', 'stud', 'basic' or 'bca'")
+
+            }
 
           }
 
@@ -2091,6 +2304,10 @@ analysed_period
     empty_list_significance <- list()
 
     place_list = 1
+
+    if (k_end < k_running_window){
+      stop("k_running_window is less than the number of analysed years. Reduce the argument k_running_window")
+    }
 
     for (w in 0:(k_end - k_running_window)){
 
