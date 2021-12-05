@@ -100,6 +100,24 @@
 #' months that will be used to calculate statistical metrics. Negative values indicate
 #' previous growing season months. This argument overwrites the calculation
 #' limits defined by lower_limit and upper_limit arguments.
+#' @param dc_method a character string to determine the method to detrend climate
+#' (environmental) data.  Possible values are c("Spline", "ModNegExp", "Mean",
+#' "Friedman", "ModHugershoff"). Defaults to "none" (see dplR R package).
+#' @param dc_nyrs a number giving the rigidity of the smoothing spline, defaults
+#' to 0.67 of series length if nyrs is NULL (see dplR R package).
+#' @param dc_f a number between 0 and 1 giving the frequency response or wavelength
+#' cutoff. Defaults to 0.5 (see dplR R package).
+#' @param dc_pos.slope a logical flag. Will allow for a positive slope to be used
+#' in method "ModNegExp" and "ModHugershoff". If FALSE the line will be horizontal
+#' (see dplR R package).
+#' @param dc_constrain.nls a character string which controls the constraints of
+#' the "ModNegExp" model and the "ModHugershoff"  (see dplR R package).
+#' @param dc_span a numeric value controlling method "Friedman", or "cv" (default)
+#' for automatic choice by cross-validation (see dplR R package).
+#' @param dc_bass a numeric value controlling the smoothness of the fitted curve
+#' in method "Friedman" (see dplR R package).
+#' @param dc_difference	a logical flag. Compute residuals by substraction if TRUE,
+#' otherwise use division (see dplR R package).
 #'
 #' @return a list with 17 elements:
 #' \enumerate{
@@ -145,30 +163,30 @@
 #'     method = "cor", row_names_subset = TRUE, metric = "adj.r.squared",
 #'     remove_insignificant = TRUE, previous_year = FALSE,
 #'     alpha = 0.05, aggregate_function = 'sum', boot = TRUE,
-#'     tidy_env_data = TRUE, boot_n = 100)
+#'     tidy_env_data = TRUE, boot_n = 100, month_interval = c(-5, 10))
 #'
 #' summary(example_tidy_data)
 #' plot(example_tidy_data, type = 1)
 #' plot(example_tidy_data, type = 2)
 #'
-#' # 2 Example with splited data for past and present
-#' example_MVA_past <- monthly_response(response = data_MVA,
+#' # 2 Example with split data for early and late
+#' example_MVA_early <- monthly_response(response = data_MVA,
 #'     env_data = LJ_monthly_temperatures,
 #'     method = "cor", row_names_subset = TRUE, previous_year = TRUE,
 #'     remove_insignificant = TRUE, alpha = 0.05,
 #'     subset_years = c(1940, 1980), aggregate_function = 'mean')
 #'
-#' example_MVA_present <- monthly_response(response = data_MVA,
+#' example_MVA_late <- monthly_response(response = data_MVA,
 #'     env_data = LJ_monthly_temperatures,
 #'     method = "cor", row_names_subset = TRUE, alpha = 0.05,
 #'     previous_year = TRUE, remove_insignificant = TRUE,
 #'     subset_years = c(1981, 2010), aggregate_function = 'mean')
 #'
-#' summary(example_MVA_present)
-#' plot(example_MVA_past, type = 1)
-#' plot(example_MVA_present, type = 1)
-#' plot(example_MVA_past, type = 2)
-#' plot(example_MVA_present, type = 2)
+#' summary(example_MVA_late)
+#' plot(example_MVA_early, type = 1)
+#' plot(example_MVA_late, type = 1)
+#' plot(example_MVA_early, type = 2)
+#' plot(example_MVA_late, type = 2)
 #'
 #'
 #' # 3 Example with principal component analysis
@@ -237,7 +255,15 @@ monthly_response <- function(response, env_data, method = "cor",
                            boot_conf_int = 0.95,
                            month_interval = ifelse(c(previous_year == TRUE,
                                                      previous_year == TRUE),
-                                                   c(-1, 12), c(1, 12))) {
+                                                   c(-1, 12), c(1, 12)),
+                           dc_method = NULL,
+                           dc_nyrs = NULL,
+                           dc_f = 0.5,
+                           dc_pos.slope = FALSE,
+                           dc_constrain.nls = c("never", "when.fail", "always"),
+                           dc_span = "cv",
+                           dc_bass = 0,
+                           dc_difference = FALSE) {
 
   ##############################################################################
   # 1 day interval is organized
@@ -487,6 +513,16 @@ if (fixed_width != 0){
 
   }
 
+  # Make sure the selected method is appropriate
+  if (!is.null(dc_method)){
+
+    if (!(dc_method %in% c("Spline", "ModNegExp", "Mean", "Friedman", "ModHugershoff"))){
+
+      stop(paste0('dc_method should be one of "Spline", "ModNegExp", "Mean", "Friedman", "ModHugershoff",
+         but instead it is:',dc_method))
+
+    }
+  }
 
   # Data manipulation
   # If use.previous == TRUE, env_data data has to be rearranged accordingly
@@ -621,6 +657,16 @@ if (fixed_width != 0){
     env_data <- subset(env_data, row.names(env_data) %in% subset_seq)
     }
 
+  # NA values are not allowed and must be removed from response data.frame
+  if (sum(is.na(response)) > 0){
+
+    prob_year <- row.names(response[is.na(response), , drop = F])
+
+    stop(paste0("NA is not allowed in response data frame. ",
+                "Problematic year is ", prob_year))
+
+  }
+
   # PART 2 - Based on the selected function arguments, different chunks of code
   # will be used. For demonstration:
   # A) Chunks are used if fixed.withd != 0
@@ -700,7 +746,17 @@ if (fixed_width != 0){
           stop(paste0("aggregate function is ", aggregate_function, ". Instead it should be mean, median or sum."))
         }
 
-        x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+        if (!is.null(dc_method)){
+
+          x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                             span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+        } else {
+
+          x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+
+        }
 
         if (boot == FALSE){
 
@@ -859,7 +915,17 @@ if (fixed_width != 0){
         stop(paste0("aggregate function is ", aggregate_function, ". Instead it should be mean, median or sum."))
       }
 
-      x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+      if (!is.null(dc_method)){
+
+        x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                           pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                           span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+      } else {
+
+        x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+
+      }
 
       if (boot == FALSE){
 
@@ -1066,7 +1132,17 @@ if (fixed_width != 0){
          stop(paste0("aggregate function is ", aggregate_function, ". Instead it should be mean, median or sum."))
        }
 
-      x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+       if (!is.null(dc_method)){
+
+         x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                            pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                            span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+       } else {
+
+         x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+
+       }
 
       if (boot == FALSE){
 
@@ -1310,7 +1386,17 @@ if (fixed_width != 0){
         stop(paste0("aggregate function is ", aggregate_function, ". Instead it should be mean, median or sum."))
       }
 
-      x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+      if (!is.null(dc_method)){
+
+        x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                           pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                           span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+      } else {
+
+        x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+
+      }
 
 
       if (boot == FALSE){
@@ -1463,7 +1549,17 @@ if (fixed_width != 0){
           stop(paste0("aggregate function is ", aggregate_function, ". Instead it should be mean, median or sum."))
         }
 
-        x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+        if (!is.null(dc_method)){
+
+          x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                             span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+        } else {
+
+          x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+
+        }
 
         if (boot == FALSE){
 
@@ -1666,7 +1762,17 @@ if (fixed_width != 0){
           stop(paste0("aggregate function is ", aggregate_function, ". Instead it should be mean, median or sum."))
         }
 
-        x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+        if (!is.null(dc_method)){
+
+          x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                             span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+        } else {
+
+          x <- matrix(x, nrow = nrow(env_data), ncol = 1)
+
+        }
 
         if (boot == FALSE){
 
@@ -1941,6 +2047,14 @@ if (fixed_width != 0){
     stop(paste0("aggregate function is ", aggregate_function, ". Instead it should be mean, median or sum."))
   }
 
+    if (!is.null(dc_method)){
+
+      dataf <- dplR::detrend(dataf, method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                             span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+    }
+
   dataf_full <- cbind(response, dataf)
   colnames(dataf_full)[ncol(dataf_full)] <- "Optimized_return"
   colnames(dataf) <- "Optimized.rowNames"
@@ -1966,6 +2080,15 @@ if (fixed_width != 0){
   }
 
   dataf_full_original <- dataf_original
+
+  if (!is.null(dc_method)){
+
+    dataf_full_original <- dplR::detrend(dataf_full_original, method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                                         pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                                         span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+  }
+
   colnames(dataf_full_original) <- "Optimized_return"
   colnames(dataf) <- "Optimized.rowNames"
 
@@ -2040,6 +2163,14 @@ if (fixed_width != 0){
       stop(paste0("aggregate function is ", aggregate_function, ". Instead it should be mean, median or sum."))
     }
 
+      if (!is.null(dc_method)){
+
+        dataf <- dplR::detrend(dataf, method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                               pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                               span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+      }
+
     dataf_full <- cbind(response, dataf)
     colnames(dataf_full)[ncol(dataf_full)] <- "Optimized_return"
     colnames(dataf) <- "Optimized.rowNames"
@@ -2061,6 +2192,15 @@ if (fixed_width != 0){
     }
 
     dataf_full_original <- dataf_original
+
+    if (!is.null(dc_method)){
+
+      dataf_full_original <- dplR::detrend(dataf_full_original, method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                                           pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                                           span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+    }
+
     colnames(dataf_full_original) <- "Optimized_return"
     colnames(dataf) <- "Optimized.rowNames"
 
@@ -2145,6 +2285,14 @@ if (fixed_width != 0){
       stop(paste0("aggregate function is ", aggregate_function, ". Instead it should be mean, median or sum."))
     }
 
+    if (!is.null(dc_method)){
+
+      dataf <- dplR::detrend(dataf, method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                             span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+    }
+
     dataf_full <- cbind(response, dataf)
     colnames(dataf_full)[ncol(dataf_full)] <- "Optimized_return"
     colnames(dataf) <- "Optimized.rowNames"
@@ -2169,6 +2317,15 @@ if (fixed_width != 0){
     }
 
     dataf_full_original <- dataf_original
+
+    if (!is.null(dc_method)){
+
+      dataf_full_original <- dplR::detrend(dataf_full_original, method = dc_method, nyrs = dc_nyrs, f = dc_f,
+                                           pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
+                                           span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+    }
+
     colnames(dataf_full_original) <- "Optimized_return"
     colnames(dataf) <- "Optimized.rowNames"
 

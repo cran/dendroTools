@@ -48,10 +48,15 @@ basic_example$transfer_functions_together +
 # The data frame of optimized tuning parameters for different methods
 kable(basic_example$parameter_values)
 
-## ----r, fig.align='center', warning=FALSE, fig.width=8, fig.height=10, fig.cap=paste("Residual diagnostic plots for calibration data: Normal Q-Q plot (left plot) and residuals vs fitted plot (right plot)")----
-# For calibration data, there are residual diagnosti plots available. Similar plots are available also for holdout and edge data. 
-library(gridExtra)
-grid.arrange(basic_example$normal_QQ_cal, basic_example$residuals_vs_fitted_cal, ncol = 2)
+## ----rb, fig.align='center', warning=FALSE, fig.width=8, fig.height=10, fig.cap=paste("Residual diagnostic plots for calibration data: Normal Q-Q plot")----
+# For calibration data, there are residual diagnostic plots available. Similar plots are available also for holdout and edge data. 
+
+basic_example$normal_QQ_cal
+
+## ----r, fig.align='center', warning=FALSE, fig.width=8, fig.height=10, fig.cap=paste("Residual diagnostic plots for calibration data: residuals vs fitted plot")----
+# For calibration data, there are residual diagnostic plots available. Similar plots are available also for holdout and edge data. 
+
+basic_example$residuals_vs_fitted_cal
 
 ## ---- results = 'hide', warning=FALSE-----------------------------------------
 # Load the dendroTools R package
