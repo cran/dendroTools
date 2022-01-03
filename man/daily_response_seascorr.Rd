@@ -239,6 +239,8 @@ a list with 15 elements:
  \item $PCA_output - princomp object: the result output of the PCA analysis
  \item $type - the character string describing type of analysis: daily or monthly
  \item $reference_window - character string, which reference window was used for calculations
+ \item $aggregated_climate_primary - matrix with all aggregated climate series of primary data
+ \item $aggregated_climate_control - matrix with all aggregated climate series of control data
 }
 }
 \description{
@@ -277,7 +279,8 @@ example_basic <- daily_response_seascorr(response = data_MVA,
                           tidy_env_data_primary = FALSE,
                           previous_year = FALSE, boot = TRUE,
                           tidy_env_data_control = TRUE, boot_n = 10,
-                          reference_window = "end")
+                          reference_window = "end",
+                          day_interval = c(-100, 250))
 summary(example_basic)
 plot(example_basic, type = 1)
 plot(example_basic, type = 2)
@@ -299,6 +302,7 @@ example_fixed_width <- daily_response_seascorr(response = data_MVA,
                           tidy_env_data_primary = FALSE,
                           tidy_env_data_control = TRUE,
                           reference_window = "end")
+
 summary(example_fixed_width)
 plot(example_fixed_width, type = 1)
 plot(example_fixed_width, type = 2)

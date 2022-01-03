@@ -223,6 +223,7 @@ a list with 17 elements:
  \item $reference_window - character string, which reference window was used for calculations
  \item $boot_lower - matrix with lower limit of confidence intervals of bootstrap calculations
  \item $boot_upper - matrix with upper limit of confidence intervals of bootstrap calculations
+ \item $aggregated_climate - matrix with all aggregated climate series
 }
 }
 \description{
@@ -255,30 +256,30 @@ example_tidy_data <- monthly_response(response = data_MVA,
     method = "cor", row_names_subset = TRUE, metric = "adj.r.squared",
     remove_insignificant = TRUE, previous_year = FALSE,
     alpha = 0.05, aggregate_function = 'sum', boot = TRUE,
-    tidy_env_data = TRUE, boot_n = 100)
+    tidy_env_data = TRUE, boot_n = 100, month_interval = c(-5, 10))
 
 summary(example_tidy_data)
 plot(example_tidy_data, type = 1)
 plot(example_tidy_data, type = 2)
 
-# 2 Example with splited data for past and present
-example_MVA_past <- monthly_response(response = data_MVA,
+# 2 Example with split data for early and late
+example_MVA_early <- monthly_response(response = data_MVA,
     env_data = LJ_monthly_temperatures,
     method = "cor", row_names_subset = TRUE, previous_year = TRUE,
     remove_insignificant = TRUE, alpha = 0.05,
     subset_years = c(1940, 1980), aggregate_function = 'mean')
 
-example_MVA_present <- monthly_response(response = data_MVA,
+example_MVA_late <- monthly_response(response = data_MVA,
     env_data = LJ_monthly_temperatures,
     method = "cor", row_names_subset = TRUE, alpha = 0.05,
     previous_year = TRUE, remove_insignificant = TRUE,
     subset_years = c(1981, 2010), aggregate_function = 'mean')
 
-summary(example_MVA_present)
-plot(example_MVA_past, type = 1)
-plot(example_MVA_present, type = 1)
-plot(example_MVA_past, type = 2)
-plot(example_MVA_present, type = 2)
+summary(example_MVA_late)
+plot(example_MVA_early, type = 1)
+plot(example_MVA_late, type = 1)
+plot(example_MVA_early, type = 2)
+plot(example_MVA_late, type = 2)
 
 
 # 3 Example with principal component analysis
