@@ -118,6 +118,11 @@
 #' in method "Friedman" (see dplR R package).
 #' @param dc_difference	a logical flag. Compute residuals by substraction if TRUE,
 #' otherwise use division (see dplR R package).
+#' @param cor_na_use an optional character string giving a method for computing
+#' covariances in the presence of missing values for correlation coefficients.
+#' This must be (an abbreviation of) one of the strings "everything" (default),
+#' "all.obs", "complete.obs", "na.or.complete", or "pairwise.complete.obs". See
+#' also the documentation for the base cor() function.
 #'
 #' @return a list with 17 elements:
 #' \enumerate{
@@ -264,7 +269,9 @@ monthly_response <- function(response, env_data, method = "cor",
                            dc_constrain.nls = c("never", "when.fail", "always"),
                            dc_span = "cv",
                            dc_bass = 0,
-                           dc_difference = FALSE) {
+                           dc_difference = FALSE,
+                           cor_na_use = "everything"
+                           ) {
 
   ##############################################################################
   # 1 day interval is organized
@@ -480,7 +487,6 @@ if (fixed_width != 0){
     stop(paste("More than 1 variable in response data frame not suitable ",
   "for 'cor' method. Use 'lm' or 'brnn'"))
 
-
   if (previous_year == FALSE){
 
     # Stop message if fixed_width is not between 0 and 366
@@ -525,6 +531,29 @@ if (fixed_width != 0){
     }
   }
 
+
+  # Warn users in case of missing values (selected threshold is 9 months)
+  env_temp <- env_data[row.names(env_data) %in% row.names(response),]
+
+  # Subset of years
+  if (!is.null(subset_years)){
+    lower_subset <- subset_years[1]
+    upper_subset <- subset_years[2]
+
+    subset_seq <- seq(lower_subset, upper_subset)
+    env_temp <- subset(env_temp, row.names(env_temp) %in% subset_seq)
+  }
+
+  na_problem <- data.frame(na_sum = rowSums(is.na(env_temp)))
+  na_problem <- na_problem[na_problem$na_sum > 8, , F]
+  problematic_years <- paste0(row.names(na_problem), sep = "", collapse=", ")
+
+  if (nrow(na_problem) > 0){
+
+    warning(paste0("Problematic years with missing values are present: ", problematic_years))
+
+  }
+
   # Data manipulation
   # If use.previous == TRUE, env_data data has to be rearranged accordingly
   if (previous_year == TRUE) {
@@ -541,12 +570,12 @@ if (fixed_width != 0){
     row.names(env_data) <- row_names_current
     env_data_original <- env_data
 
-    response$yearABC <- row.names(response)
-    response <- dplyr::arrange(response, desc(yearABC))
-    response <- years_to_rownames(response, "yearABC")
-    response <- data.frame(response[-nrow(response),,F ])
-    response <- data.frame(response)
-    response_original <- response
+    # response$yearABC <- row.names(response)
+    # response <- dplyr::arrange(response, desc(yearABC))
+    # response <- years_to_rownames(response, "yearABC")
+    # response <- data.frame(response[-nrow(response),,F ])
+    # response <- data.frame(response)
+    # response_original <- response
 
     }
 
@@ -772,7 +801,7 @@ if (fixed_width != 0){
 
         if (boot == FALSE){
 
-          temporal_correlation <- cor(response[, 1], x[, 1], method = cor_method)
+          temporal_correlation <- cor(response[, 1], x[, 1], method = cor_method, use = cor_na_use)
           temporal_lower <- NA
           temporal_upper <- NA
 
@@ -1429,7 +1458,7 @@ if (fixed_width != 0){
       mm = mm + 1
 
       if (boot == FALSE){
-        temporal_correlation <- cor(response[, 1], x[, 1], method = cor_method)
+        temporal_correlation <- cor(response[, 1], x[, 1], method = cor_method, use = cor_na_use)
         temporal_lower <- NA
         temporal_upper <- NA
       } else if (boot == TRUE){
@@ -2179,7 +2208,7 @@ if (fixed_width != 0){
   }
 
   if (method == "cor"){
-    optimized_result <- cor(dataf, response, method = cor_method)
+    optimized_result <- cor(dataf, response, method = cor_method, use = cor_na_use)
   }
 
   # Just give a nicer colname
@@ -2289,7 +2318,7 @@ if (fixed_width != 0){
     }
 
     if (method == "cor"){
-      optimized_result <- cor(dataf, response, method = cor_method)
+      optimized_result <- cor(dataf, response, method = cor_method, use = cor_na_use)
     }
 
     # Just give a nicer colname
@@ -2416,7 +2445,7 @@ if (fixed_width != 0){
     }
 
     if (method == "cor"){
-      optimized_result <- cor(dataf, response, method = cor_method)
+      optimized_result <- cor(dataf, response, method = cor_method, use = cor_na_use)
     }
 
     # Just give a nicer colname
@@ -2514,7 +2543,7 @@ if (fixed_width != 0){
       empty_list_period[[m]] <- paste(MIN, "-", MAKS)
 
       if (method == "cor"){
-        calculation <- cor(dataset_temp[,1], dataset_temp[,2])
+        calculation <- cor(dataset_temp[,1], dataset_temp[,2], method = cor_method, use = cor_na_use)
         sig <- cor.test(dataset_temp[,1], dataset_temp[,2], method = cor_method, exaxt= FALSE)$p.value
         empty_list_significance[[m]] <- sig
         empty_list[[m]] <- calculation
@@ -2586,7 +2615,7 @@ if (fixed_width != 0){
         empty_list_period[[m]] <- paste(MIN, "-", MAKS)
 
         if (method == "cor"){
-          calculation <- cor(dataset_temp[,1], dataset_temp[,2], method = cor_method)
+          calculation <- cor(dataset_temp[,1], dataset_temp[,2], method = cor_method, use = cor_na_use)
           sig <- cor.test(dataset_temp[,1], dataset_temp[,2], method = cor_method, exaxt= FALSE)$p.value
           empty_list[[m]] <- calculation
           empty_list_significance[[m]] <- sig
@@ -2682,7 +2711,7 @@ for (m in 1:length(empty_list_datasets)){
   dataset_temp <- empty_list_datasets[[m]]
 
   if (method == "cor"){
-    calculation <- cor(dataset_temp[,1], dataset_temp[,2], method = cor_method)
+    calculation <- cor(dataset_temp[,1], dataset_temp[,2], method = cor_method, use = cor_na_use)
     sig <- cor.test(dataset_temp[,1], dataset_temp[,2], method = cor_method, exaxt= FALSE)$p.value
     empty_list[[m]] <- calculation
     empty_list_significance[[m]] <- sig
