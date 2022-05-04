@@ -12,7 +12,7 @@
 
 <meta name="author" content="Jernej Jevsenak" />
 
-<meta name="date" content="2022-02-23" />
+<meta name="date" content="2022-05-04" />
 
 <title>Compare different regression methods</title>
 
@@ -141,7 +141,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <h1 class="title toc-ignore">Compare different regression methods</h1>
 <h4 class="author">Jernej Jevsenak</h4>
-<h4 class="date">2022-02-23</h4>
+<h4 class="date">2022-05-04</h4>
 
 
 
@@ -1120,7 +1120,7 @@ Residual diagnostic plots for calibration data: residuals vs fitted plot
 </div>
 <div id="example-of-climate-reconstruction" class="section level2">
 <h2>5. Example of climate reconstruction</h2>
-<p>Reconstructions of past climate conditions include reconstructions of past temperature, precipitation, vegetation, streamflow, sea surface temperature, and other climatic or climate-dependent conditions. With the <em>compare_methods()</em> it is possible to directly reconstruct the dependent variable specified with the <em>formula</em> argument. To do so, supply additional complete dataset with tree-ring chronology that goes beyond the observations of instrumental records.</p>
+<p>Reconstructions of past climate conditions include reconstructions of past temperature, precipitation, vegetation, stream flow, sea surface temperature, and other climatic or climate-dependent conditions. With the <em>compare_methods()</em> it is possible to directly reconstruct the dependent variable specified with the <em>formula</em> argument. To do so, supply additional complete dataset with tree-ring chronology that goes beyond the observations of instrumental records.</p>
 <p>For the <em>example_reconstruction</em>, we use <em>data_TRW</em> dataset, which includes a tree-ring width (TRW) chronology of <em>Pinus nigra</em> from Albania and mean June-July temperature from Albania. The complete TRW chronology is supplied with the <em>dataset_TRW_complete</em>. In this example, we will compare RF and MLR models with 3-fold cross-validation and 1 repeat.</p>
 <div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the dendroTools R package</span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dendroTools)</span>
