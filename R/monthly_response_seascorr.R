@@ -729,13 +729,15 @@ monthly_response_seascorr <- function(response, env_data_primary, env_data_contr
     }
 
   # NA values are not allowed and must be removed from response data.frame
-  if (sum(is.na(response)) > 0){
+  # exception if cor_na_us accounts for missing values
+  if (sum(is.na(response)) > 0 & !(pcor_na_use %in% c("complete.obs", "na.or.complete", "pairwise.complete.obs"))){
 
     prob_year <- row.names(response[is.na(response), , drop = F])
 
     stop(paste0("NA is not allowed in response data frame. ",
                 "Problematic year is ", prob_year))
-    }
+
+  }
 
 
   # PART 2 - the calculation of day-wise correlations
@@ -1627,7 +1629,7 @@ monthly_response_seascorr <- function(response, env_data_primary, env_data_contr
   # Here, the transfer function is being created
   transfer_data = data.frame(proxy = response[,1], optimized_return =x1[,1])
   lm_model = lm(optimized_return ~ proxy, data = transfer_data)
-  full_range = data.frame(proxy = seq(from = min(response[,1]), to = max(response[,1]), length.out = 100))
+  full_range = data.frame(proxy = seq(from = min(response[,1], na.rm = TRUE), to = max(response[,1], na.rm = TRUE), length.out = 100))
 
   # String for titles
 

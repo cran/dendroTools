@@ -181,8 +181,8 @@
 #'     env_data = LJ_daily_temperatures,
 #'     method = "cor", fixed_width = 40, cor_method = "spearman",
 #'     row_names_subset = TRUE, previous_year = TRUE,
-#'     remove_insignificant = TRUE,
-#'     alpha = 0.0000000000000005, aggregate_function = 'mean',
+#'     remove_insignificant = TRUE, boot = TRUE,
+#'     alpha = 0.005, aggregate_function = 'mean',
 #'     reference_window = "start")
 #'
 #' summary(example_daily_response)
@@ -684,7 +684,8 @@ daily_response <- function(response, env_data, method = "cor",
     }
 
   # NA values are not allowed and must be removed from response data.frame
-  if (sum(is.na(response)) > 0){
+  # exception if cor_na_us accounts for missing values
+  if (sum(is.na(response)) > 0 & !(cor_na_use %in% c("complete.obs", "na.or.complete", "pairwise.complete.obs"))){
 
     prob_year <- row.names(response[is.na(response), , drop = F])
 
@@ -2633,7 +2634,7 @@ daily_response <- function(response, env_data, method = "cor",
   transfer_data = data.frame(proxy = response[,1], optimized_return =dataf[,1])
   lm_model = lm(optimized_return ~ proxy, data = transfer_data)
   capture.output(brnn_model <- try(brnn(optimized_return ~ proxy, data = transfer_data, neurons = neurons), silent = TRUE))
-  full_range = data.frame(proxy = seq(from = min(response[,1]), to = max(response[,1]), length.out = 100))
+  full_range = data.frame(proxy = seq(from = min(response[,1], na.rm = TRUE), to = max(response[,1], na.rm = TRUE), length.out = 100))
 
   if (method == "lm" | method == "cor"){
     full_range$transfer_f = predict(lm_model, full_range)
