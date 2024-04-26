@@ -47,33 +47,6 @@ plot(example_fixed_width, type = 1)
 # Load the dendroTools R package
 library(dendroTools)
 
-# Load the data
-data(data_MVA)
-data(LJ_daily_temperatures)
-
-# Example for past and present
-example_MVA_early <- daily_response(response = data_MVA, env_data = LJ_daily_temperatures,
-                              method = "cor", lower_limit = 55, upper_limit = 65,
-                              row_names_subset = TRUE, previous_year = TRUE,
-                              remove_insignificant = TRUE, alpha = 0.05, 
-                              subset_years = c(1941, 1980))
-
-example_MVA_late <- daily_response(response = data_MVA, env_data = LJ_daily_temperatures,
-                                   method = "cor", lower_limit = 55, upper_limit = 65,
-                                   row_names_subset = TRUE, previous_year = TRUE,
-                                   remove_insignificant = TRUE, alpha = 0.05, 
-                                   subset_years = c(1981, 2010))
-
-## ---- fig.align='center', warning=FALSE, fig.width = 10, fig.height = 8, fig.cap=paste("Figure 4: The temporal correlations pattern for the period 1941-1980"), message=FALSE, warning=FALSE, include=TRUE----
-plot(example_MVA_early, type = 2)
-
-## ---- fig.align='center', warning=FALSE, fig.width=10, fig.height=8, fig.cap=paste("Figure 5: The temporal correlations pattern for the period 1981-2010"), message=FALSE, warning=FALSE, include=TRUE----
-plot(example_MVA_late, type = 2)
-
-## ---- results = 'hide'--------------------------------------------------------
-# Load the dendroTools R package
-library(dendroTools)
-
 # Load data
 data(data_TRW_1)
 data(LJ_daily_temperatures)
@@ -108,36 +81,13 @@ cor(example_proxies_1)
 example_multiproxy <- daily_response(response = example_proxies_1, 
                                      env_data = LJ_daily_temperatures, 
                                      method = "lm", metric = "adj.r.squared", 
-                                     lower_limit = 63, upper_limit = 67, 
+                                     lower_limit = 63, upper_limit = 67,
+                                     skip_window_position = 10,
                                      row_names_subset = TRUE, previous_year = FALSE, 
                                      remove_insignificant = TRUE, alpha = 0.05)
 
 ## ---- fig.align='center', warning=FALSE, fig.width=10, fig.height=8, fig.cap=paste("Figure 7: The temporal pattern of adjusted r-squared for the multiproxy example. The temporal pattern shows similar result than for the example with MVA only. Therefore, the highest percentage of (adjusted) explained variance is most likely related to MVA variable."), message=FALSE, warning=FALSE, include=TRUE----
 plot(example_multiproxy, type = 2)
-
-## ---- results = 'hide'--------------------------------------------------------
-# Load the dendroTools R package
-library(dendroTools)
-
-# Load data
-data(example_proxies_individual)
-data(LJ_daily_temperatures)
-
-# Example PCA
-example_PCA <- daily_response(response = example_proxies_individual, 
-                              env_data = LJ_daily_temperatures, method = "lm", 
-                              lower_limit = 64, upper_limit = 66, metric = "adj.r.squared",
-                              row_names_subset = TRUE, remove_insignificant = TRUE,
-                              alpha = 0.001, PCA_transformation = TRUE,
-                              components_selection = "manual", N_components = 2)
-
-## -----------------------------------------------------------------------------
-# Get the summary statistics for the PCA
-summary(example_PCA$PCA_output)
-
-## ---- fig.align='center', warning=FALSE, fig.width=10, fig.height=8, fig.cap=paste("Figure 8: The temporal pattern for the r-squared. The highest coefficients of determination were calculated for DOY around 90 with time span of two months."), message=FALSE, warning=FALSE, include=TRUE----
-
-plot(example_PCA, type = 2)
 
 ## ---- results = 'hide'--------------------------------------------------------
 # Load the dendroTools R package
@@ -150,7 +100,7 @@ data(KRE_daily_temperatures)
 example_reconstruction_lin <- daily_response(response = data_TRW, 
                                              env_data = KRE_daily_temperatures, 
                                              method = "lm", metric = "r.squared", 
-                                             lower_limit = 38, upper_limit = 42,
+                                             lower_limit = 42, upper_limit = 42,
                                              row_names_subset = TRUE, 
                                              temporal_stability_check = "progressive",
                                              cross_validation_type = "randomized", k = 3)
@@ -183,6 +133,7 @@ partial_cor <- daily_response_seascorr(response = swit272,
                     aggregate_function_env_data_primary = 'mean',
                     aggregate_function_env_data_control = 'sum',
                     pcor_method = "spearman",
+                    skip_window_position = 10,
                     boot = FALSE, reference_window = "end")
 
 

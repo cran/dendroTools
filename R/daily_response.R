@@ -48,21 +48,6 @@
 #' @param row_names_subset if set to TRUE, row.names are used to subset
 #' env_data and response data frames. Only years from both data frames are
 #' kept.
-#' @param PCA_transformation if set to TRUE, all variables in the response
-#' data frame will be transformed using PCA transformation.
-#' @param log_preprocess if set to TRUE, variables will be transformed with
-#' logarithmic transformation before used in PCA
-#' @param components_selection character string specifying how to select the Principal
-#' Components used as predictors.
-#' There are three options: "automatic", "manual" and "plot_selection". If
-#' argument is set to automatic, all scores with eigenvalues above 1 will be
-#' selected. This threshold could be changed by changing the
-#' eigenvalues_threshold argument. If parameter is set to "manual", user should
-#' set the number of components with N_components argument. If components
-#' selection is set to "plot_selection", Scree plot will be shown and a user must
-#' manually enter the number of components to be used as predictors.
-#' @param eigenvalues_threshold threshold for automatic selection of Principal Components
-#' @param N_components number of Principal Components used as predictors
 #' @param aggregate_function character string specifying how the daily data
 #' should be aggregated. The default is 'mean', the other options are 'median',
 #' 'sum', 'min' and 'max'
@@ -82,10 +67,8 @@
 #' years will not be shuffled. If the argument is set to "randomized", years will be shuffled.
 #' @param subset_years a subset of years to be analyzed. Should be given in the form of
 #' subset_years = c(1980, 2005)
-#' @param plot_specific_window integer representing window width to be displayed
-#' for plot_specific
-#' @param ylimits limit of the y axes for plot_extreme and plot_specific. It should be
-#' given in the form of: ylimits = c(0,1)
+#' @param ylimits limit of the y axes for plot_extreme. It should be given in
+#' the form of: ylimits = c(0,1)
 #' @param seed optional seed argument for reproducible results
 #' @param tidy_env_data if set to TRUE, env_data should be inserted as a data frame with three
 #' columns: "Year", "DOY", "Precipitation/Temperature/etc."
@@ -117,28 +100,33 @@
 #' previous growing season days. This argument overwrites the calculation
 #' limits defined by lower_limit and upper_limit arguments.
 #' @param dc_method a character string to determine the method to detrend climate
-#' (environmental) data.  Possible values are c("Spline", "ModNegExp", "Mean",
-#' "Friedman", "ModHugershoff"). Defaults to "none" (see dplR R package).
-#' @param dc_nyrs a number giving the rigidity of the smoothing spline, defaults
-#' to 0.67 of series length if nyrs is NULL (see dplR R package).
-#' @param dc_f a number between 0 and 1 giving the frequency response or wavelength
-#' cutoff. Defaults to 0.5 (see dplR R package).
-#' @param dc_pos.slope a logical flag. Will allow for a positive slope to be used
-#' in method "ModNegExp" and "ModHugershoff". If FALSE the line will be horizontal
-#' (see dplR R package).
-#' @param dc_constrain.nls a character string which controls the constraints of
-#' the "ModNegExp" model and the "ModHugershoff"  (see dplR R package).
-#' @param dc_span a numeric value controlling method "Friedman", or "cv" (default)
-#' for automatic choice by cross-validation (see dplR R package).
-#' @param dc_bass a numeric value controlling the smoothness of the fitted curve
-#' in method "Friedman" (see dplR R package).
-#' @param dc_difference	a logical flag. Compute residuals by subtraction if TRUE,
-#' otherwise use division (see dplR R package).
+#' data.  Possible values are "none" (default) and "SLD" which refers to Simple
+#' Linear Detrending
 #' @param cor_na_use an optional character string giving a method for computing
 #' covariances in the presence of missing values for correlation coefficients.
 #' This must be (an abbreviation of) one of the strings "everything" (default),
 #' "all.obs", "complete.obs", "na.or.complete", or "pairwise.complete.obs". See
 #' also the documentation for the base cor() function.
+#' @param skip_window_length an integer specifying the frequency of window
+#' selection for the calculations of climate-growth relationships. The default
+#' value is 1, indicating that every window is included in the calculations.
+#' When set to a value greater than 1, the function selectively processes
+#' windows at regular intervals defined by this parameter. For instance, if
+#' skip_window_length = 2, the function processes every second window.
+#' Similarly, if skip_window_length = 3, every third window is processed,
+#' skipping two windows in between each selected one. This parameter allows for
+#' controlling the granularity of the analysis and can help in reducing
+#' computation time by focusing on a subset of the data.
+#' @param skip_window_position an integer specifying the frequency of window
+#' positions used in the calculations of climate-growth relationships. The
+#' default value is 1, indicating that every window position is included in the
+#' calculations. When set to a value greater than 1, the function selectively
+#' processes window positions at regular intervals defined by this parameter.
+#' For instance, if skip_window_position = 2, the function processes every
+#' second window position. Similarly, if skip_window_position = 3, every third
+#' window position is processed, skipping two positions in between each selected
+#' one. This parameter allows for controlling the granularity of the analysis
+#' and can help in reducing computation time by focusing on a subset of the data.
 #'
 #' @return a list with 17 elements:
 #' \enumerate{
@@ -153,8 +141,6 @@
 #'  \item $cross_validation - a data frame with cross validation results
 #'  \item $plot_heatmap - ggplot2 object: a heatmap of calculated metrics
 #'  \item $plot_extreme - ggplot2 object: line plot of a row with the highest value in a matrix of calculated metrics
-#'  \item $plot_specific  - ggplot2 object: line plot of a row with a selected window width in a matrix of calculated metrics
-#'  \item $PCA_output - princomp object: the result output of the PCA analysis
 #'  \item $type - the character string describing type of analysis: daily or monthly
 #'  \item $reference_window - character string, which reference window was used for calculations
 #'  \item $boot_lower - matrix with lower limit of confidence intervals of bootstrap calculations
@@ -165,6 +151,13 @@
 #'
 #' @examples
 #' \donttest{
+#'
+#' # The examples below are enclosed within donttest{} to minimize the execution
+#' # time during R package checks. Additionally, all examples include the
+#' # parameters `skip_window_length` and `skip_window_position`, which limit the
+#' # number of combinations evaluated in climate-growth correlation calculations.
+#' # To explore all possible combinations, users should set both parameters to 1.
+#'
 #' # Load the dendroTools R package
 #' library(dendroTools)
 #'
@@ -176,6 +169,22 @@
 #' data(example_proxies_1)
 #' data(LJ_daily_temperatures)
 #'
+#' example_basic <- daily_response(response = data_MVA,
+#'                           env_data = LJ_daily_temperatures,
+#'                           row_names_subset = TRUE,
+#'                           fixed_width = 25,
+#'                           lower_limit = 35, upper_limit = 45,
+#'                           remove_insignificant = FALSE,
+#'                           aggregate_function = 'median',
+#'                           alpha = 0.05, cor_method = "spearman",
+#'                           previous_year = FALSE, boot = TRUE,
+#'                           boot_n = 10,
+#'                           skip_window_length = 50,
+#'                           skip_window_position = 50,
+#'                           reference_window = "end", k = 5,
+#'                           dc_method = "SLD",
+#'                           day_interval = c(-100, 250))
+#'
 #' # 1 Example with fixed width. Lower and upper limits are ignored.
 #' example_daily_response <- daily_response(response = data_MVA,
 #'     env_data = LJ_daily_temperatures,
@@ -183,87 +192,85 @@
 #'     row_names_subset = TRUE, previous_year = TRUE,
 #'     remove_insignificant = TRUE, boot = TRUE,
 #'     alpha = 0.005, aggregate_function = 'mean',
-#'     reference_window = "start")
+#'     day_interval = c(-100, 250), skip_window_length = 100,
+#'     reference_window = "start", skip_window_position = 100)
 #'
-#' summary(example_daily_response)
-#' plot(example_daily_response, type = 1)
-#' plot(example_daily_response, type = 2)
+#' # summary(example_daily_response)
+#' # plot(example_daily_response, type = 1)
+#' # plot(example_daily_response, type = 2)
 #'
 #' # 2 Example for past and present. Use subset_years argument.
 #' example_MVA_early <- daily_response(response = data_MVA,
 #'     env_data = LJ_daily_temperatures, cor_method = "kendall",
-#'     method = "cor", lower_limit = 21, upper_limit = 90,
+#'     method = "lm", lower_limit = 21, upper_limit = 91,
 #'     row_names_subset = TRUE, previous_year = TRUE,
 #'     remove_insignificant = TRUE, alpha = 0.05,
-#'     plot_specific_window = 60, subset_years = c(1940, 1980),
-#'     aggregate_function = 'sum')
+#'     subset_years = c(1940, 1980),
+#'     fixed_width = 45,
+#'     aggregate_function = 'sum',
+#'     skip_window_length = 50,
+#'     skip_window_position = 50)
 #'
 #' example_MVA_late <- daily_response(response = data_MVA,
 #'     env_data = LJ_daily_temperatures,
 #'     method = "cor", lower_limit = 21, upper_limit = 60,
 #'     row_names_subset = TRUE, previous_year = TRUE,
 #'     remove_insignificant = TRUE, alpha = 0.05,
-#'     plot_specific_window = 60, subset_years = c(1981, 2010),
-#'     aggregate_function = 'sum')
+#'     subset_years = c(1981, 2010),
+#'     skip_window_length = 50,
+#'     skip_window_position = 50)
 #'
-#' plot(example_MVA_early, type = 1)
-#' plot(example_MVA_late, type = 1)
-#' plot(example_MVA_early, type = 2)
-#' plot(example_MVA_late, type = 2)
+#' # plot(example_MVA_early, type = 1)
+#' # plot(example_MVA_late, type = 1)
+#' # plot(example_MVA_early, type = 2)
+#' # plot(example_MVA_late, type = 2)
 #'
-#' # 3 Example PCA
-#' example_PCA <- daily_response(response = example_proxies_individual,
-#'     env_data = LJ_daily_temperatures, method = "lm",
-#'     lower_limit = 21, upper_limit = 180,
-#'     row_names_subset = TRUE, remove_insignificant = TRUE,
-#'     alpha = 0.01, PCA_transformation = TRUE,
-#'     components_selection = "manual", N_components = 2)
-#'
-#' summary(example_PCA$PCA_output)
-#' summary(example_PCA)
-#' plot(example_PCA, type = 2)
-#'
-#' # 4 Example negative correlations
+#' # 3 Example with negative correlations
 #' example_neg_cor <- daily_response(response = data_TRW_1,
 #'     env_data = LJ_daily_temperatures, previous_year = TRUE,
 #'     method = "cor", lower_limit = 21, upper_limit = 90,
 #'     row_names_subset = TRUE, remove_insignificant = TRUE,
-#'     alpha = 0.05)
+#'     alpha = 0.05, skip_window_length = 50,
+#'     skip_window_position = 50)
 #'
-#' summary(example_neg_cor)
-#' plot(example_neg_cor, type = 1)
-#' plot(example_neg_cor, type = 2)
-#' example_neg_cor$temporal_stability
+#' # summary(example_neg_cor)
+#' # plot(example_neg_cor, type = 1)
+#' # plot(example_neg_cor, type = 2)
 #'
-#' # 5 Example of multiproxy analysis
-#' summary(example_proxies_1)
-#' cor(example_proxies_1)
+#' # 4 Example of multiproxy analysis
+#' # summary(example_proxies_1)
+#' # cor(example_proxies_1)
 #'
 #' example_multiproxy <- daily_response(response = example_proxies_1,
 #'    env_data = LJ_daily_temperatures,
 #'    method = "lm", metric = "adj.r.squared",
 #'    lower_limit = 21, upper_limit = 180,
 #'    row_names_subset = TRUE, previous_year = FALSE,
-#'    remove_insignificant = TRUE, alpha = 0.05)
+#'    remove_insignificant = TRUE, alpha = 0.05,
+#'    skip_window_length = 50,
+#'    skip_window_position = 50)
 #'
-#' plot(example_multiproxy, type = 1)
+#' # plot(example_multiproxy, type = 1)
 #'
-#' # 6 Example to test the temporal stability
+#' # 5 Example to test the temporal stability
 #' example_MVA_ts <- daily_response(response = data_MVA,
 #'    env_data = LJ_daily_temperatures, method = "brnn",
 #'    lower_limit = 100, metric = "adj.r.squared", upper_limit = 180,
 #'    row_names_subset = TRUE, remove_insignificant = TRUE, alpha = 0.05,
-#'    temporal_stability_check = "running_window", k_running_window = 10)
+#'    temporal_stability_check = "running_window", k_running_window = 10,
+#'    skip_window_length = 50, skip_window_position = 50)
 #'
-#' example_MVA_ts$temporal_stability
+#' # Check the results for temporal stability
+#' # example_MVA_ts$temporal_stability
 #'
-#' # 7 Example with nonlinear brnn estimation
+#' # 6 Example with nonlinear brnn estimation
 #' example_brnn <- daily_response(response = data_MVA,
 #'    env_data = LJ_daily_temperatures, method = "brnn", boot = FALSE,
 #'    lower_limit = 100, metric = "adj.r.squared", upper_limit = 101,
-#'    row_names_subset = TRUE, remove_insignificant = TRUE, boot_n = 10)
+#'    row_names_subset = TRUE, remove_insignificant = TRUE, boot_n = 10,
+#'    skip_window_length = 50, skip_window_position = 50)
 #'
-#' summary(example_brnn)
+#' # summary(example_brnn)
 #' }
 
 daily_response <- function(response, env_data, method = "cor",
@@ -272,13 +279,10 @@ daily_response <- function(response, env_data, method = "cor",
                            previous_year = FALSE, neurons = 1,
                            brnn_smooth = TRUE, remove_insignificant = FALSE,
                            alpha = .05, row_names_subset = FALSE,
-                           PCA_transformation = FALSE, log_preprocess = TRUE,
-                           components_selection = 'automatic',
-                           eigenvalues_threshold = 1,
-                           N_components = 2, aggregate_function = 'mean',
+                           aggregate_function = 'mean',
                            temporal_stability_check = "sequential", k = 2,
                            k_running_window = 30, cross_validation_type = "blocked",
-                           subset_years = NULL, plot_specific_window = NULL,
+                           subset_years = NULL,
                            ylimits = NULL, seed = NULL, tidy_env_data = FALSE,
                            reference_window = 'start',  boot = FALSE, boot_n = 1000,
                            boot_ci_type = "norm", boot_conf_int = 0.95,
@@ -286,14 +290,9 @@ daily_response <- function(response, env_data, method = "cor",
                                                    previous_year == TRUE),
                                                    c(-1, 366), c(1, 366)),
                            dc_method = NULL,
-                           dc_nyrs = NULL,
-                           dc_f = 0.5,
-                           dc_pos.slope = FALSE,
-                           dc_constrain.nls = c("never", "when.fail", "always"),
-                           dc_span = "cv",
-                           dc_bass = 0,
-                           dc_difference = FALSE,
-                           cor_na_use = "everything"
+                           cor_na_use = "everything",
+                           skip_window_length = 1,
+                           skip_window_position = 1
                            ) {
 
   ##############################################################################
@@ -519,10 +518,9 @@ daily_response <- function(response, env_data, method = "cor",
   # Make sure the selected method is appropriate
   if (!is.null(dc_method)){
 
-    if (!(dc_method %in% c("Spline", "ModNegExp", "Mean", "Friedman", "ModHugershoff"))){
+    if (!(dc_method %in% c("SLD"))){
 
-    stop(paste0('dc_method should be one of "Spline", "ModNegExp", "Mean", "Friedman", "ModHugershoff",
-         but instead it is:',dc_method))
+    stop(paste0('dc_method should be SLD but instead it is:',dc_method))
 
     }
   }
@@ -567,13 +565,6 @@ daily_response <- function(response, env_data, method = "cor",
     row.names(env_data) <- row_names_current
     env_data_original <- env_data
 
-    # response$yearABC <- row.names(response)
-    # response <- dplyr::arrange(response, desc(yearABC))
-    # response <- years_to_rownames(response, "yearABC")
-    # response <- data.frame(response[-nrow(response),,F ])
-    # response <- data.frame(response)
-    # response_original <- response
-
     }
 
   # If row_names_subset == TRUE, data is subseted and ordered based on matching
@@ -613,48 +604,6 @@ daily_response <- function(response, env_data, method = "cor",
                 "At least three characters needed!"))
   }
 
-
-  # If PCA_transformation = TRUE, PCA is performed
-  if (PCA_transformation == TRUE) {
-
-    # Logarithmic transformation before PCA
-    if (log_preprocess == TRUE) {
-
-      if (sum(response <= 0) > 1){
-        stop("your response data contains negative observations. Please set the argument log_preprocess to FALSE")
-      }
-
-      response <- data.frame(log(response))
-    }
-
-    PCA_result <- princomp(response, cor = TRUE)
-
-    if (components_selection == 'automatic'){
-      subset_vector <- PCA_result$sdev > eigenvalues_threshold
-      response <- as.data.frame(PCA_result$scores[, subset_vector])
-    }
-
-    if (components_selection == 'manual'){
-      response <- as.data.frame(PCA_result$scores[, 1:N_components])
-    }
-
-    if (components_selection == 'plot_selection'){
-      plot(PCA_result, type = 'l')
-
-      fun <- function(){
-        N_PC <- readline("What number of PC scores should be used as predictors? ")
-        return(N_PC)
-      }
-
-      N_PC <- fun()
-      response <- as.data.frame(PCA_result$scores[, 1:as.numeric(N_PC)])
-    }
-
-    number_PC <- ncol(response)
-    df_names <-  paste( "PC_", seq(1:number_PC), sep = "")
-    colnames(response) <- df_names
-
-  } else (PCA_result <- "No PCA result avalialbe !")
 
   # Subset of years
   if (!is.null(subset_years)){
@@ -733,10 +682,14 @@ daily_response <- function(response, env_data, method = "cor",
     temporal_matrix_lower <- temporal_matrix
     temporal_matrix_upper <- temporal_matrix
 
+    if(interactive()){
+
       if (fixed_width != max_window){
-        pb <- txtProgressBar(min = 0, max = (ncol(env_data) - fixed_width - offset_end - offset_start + 1),
+        pb <- txtProgressBar(min = 0, max = ceiling((ncol(env_data) - fixed_width - offset_end - offset_start + 1)/(skip_window_position)),
                              style = 3)
       }
+
+    }
 
       b = 0
 
@@ -746,7 +699,7 @@ daily_response <- function(response, env_data, method = "cor",
       # based on a selected method (cor, lm or brnn). Calculation is stored in
       # temporal matrix.
 
-      for (j in (0 + offset_start -1): (ncol(env_data) - max((fixed_width + offset_end), offset_end))) {
+      for (j in (seq((0 + offset_start -1), (ncol(env_data) - max((fixed_width + offset_end), offset_end)), by = skip_window_position))) {
 
         b = b + 1
 
@@ -806,9 +759,15 @@ daily_response <- function(response, env_data, method = "cor",
 
         if (!is.null(dc_method)){
 
-          x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                            span = dc_span, bass = dc_bass,  difference = dc_difference)
+          if (dc_method == "SLD"){
+
+            tmp_model <- lm(x ~ seq(1:length(x)))
+            tmp_pred <- predict(tmp_model)
+            tmp_res <- x - tmp_pred
+
+            x <- data.frame(x = tmp_res/sd(tmp_res))
+
+          }
 
         } else {
 
@@ -898,9 +857,16 @@ daily_response <- function(response, env_data, method = "cor",
           temporal_matrix_lower[1, round2(j + 1 + fixed_width/2, 0)] <- temporal_lower
           temporal_matrix_upper[1, round2(j + 1 + fixed_width/2, 0)] <- temporal_upper
         }
+
+        if(interactive()){
         if (fixed_width != max_window){setTxtProgressBar(pb, b)}
+        }
       }
+
+
+      if(interactive()){
       if (fixed_width != max_window){close(pb)}
+      }
 
      # temporal_matrix is given rownames and colnames. Rownames represent a
      # window width used fot calculations. Colnames represent the position of
@@ -937,12 +903,18 @@ daily_response <- function(response, env_data, method = "cor",
     temporal_matrix_upper <- temporal_matrix
 
     if (fixed_width != max_window){
-    pb <- txtProgressBar(min = 0, max = (ncol(env_data) - fixed_width - offset_end - offset_start + 1),
+
+      if(interactive()){
+
+    pb <- txtProgressBar(min = 0, max = ceiling((ncol(env_data) - fixed_width - offset_end - offset_start + 1)/(skip_window_position)),
                          style = 3)}
+      }
 
     b = 0
 
-    for (j in (0 + offset_start -1): (ncol(env_data) - max((fixed_width + offset_end), offset_end))) {
+    for (j in (seq((0 + offset_start -1), (ncol(env_data) - max((fixed_width + offset_end), offset_end)), by = skip_window_position))) {
+
+
 
       b = b + 1
 
@@ -1000,9 +972,15 @@ daily_response <- function(response, env_data, method = "cor",
 
       if (!is.null(dc_method)){
 
-        x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                           pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                           span = dc_span, bass = dc_bass,  difference = dc_difference)
+        if (dc_method == "SLD"){
+
+          tmp_model <- lm(x ~ seq(1:length(x)))
+          tmp_pred <- predict(tmp_model)
+          tmp_res <- x - tmp_pred
+
+          x <- data.frame(x = tmp_res/sd(tmp_res))
+
+        }
 
       } else {
 
@@ -1142,11 +1120,15 @@ daily_response <- function(response, env_data, method = "cor",
         }
       }
 
-
+      if(interactive()){
       if (fixed_width != max_window){setTxtProgressBar(pb, b)}
+      }
     }
 
-    if (fixed_width != max_window){close(pb)}
+    if(interactive()){
+      if (fixed_width != max_window){close(pb)}
+    }
+
 
     row.names(temporal_matrix) <- fixed_width
     row.names(temporal_matrix_lower) <- fixed_width
@@ -1180,12 +1162,15 @@ daily_response <- function(response, env_data, method = "cor",
     temporal_matrix_upper <- temporal_matrix
 
     if (fixed_width != max_window){
-    pb <- txtProgressBar(min = 0, max = (ncol(env_data) - fixed_width - offset_end - offset_start + 1),
-                         style = 3)}
 
+      if(interactive()){
+
+    pb <- txtProgressBar(min = 0, max = ceiling((ncol(env_data) - fixed_width - offset_end - offset_start + 1)/(skip_window_position)),
+                         style = 3)}
+      }
     b = 0
 
-    for (j in (0 + offset_start -1): (ncol(env_data) - max((fixed_width + offset_end), offset_end))) {
+    for (j in (seq((0 + offset_start -1), (ncol(env_data) - max((fixed_width + offset_end), offset_end)), by = skip_window_position))) {
 
        b = b + 1
 
@@ -1239,9 +1224,15 @@ daily_response <- function(response, env_data, method = "cor",
 
        if (!is.null(dc_method)){
 
-         x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                            pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                            span = dc_span, bass = dc_bass,  difference = dc_difference)
+         if (dc_method == "SLD"){
+
+           tmp_model <- lm(x ~ seq(1:length(x)))
+           tmp_pred <- predict(tmp_model)
+           tmp_res <- x - tmp_pred
+
+           x <- data.frame(x = tmp_res/sd(tmp_res))
+
+         }
 
        } else {
 
@@ -1401,11 +1392,14 @@ daily_response <- function(response, env_data, method = "cor",
           temporal_matrix_upper[1, round2(j + 1 + fixed_width/2, 0)] <- temporal_adj_r_squared_upper
         }
       }
-
+       if(interactive()){
       if (fixed_width != max_window){setTxtProgressBar(pb, b)}
+       }
      }
 
-    if (fixed_width != max_window){close(pb)}
+    if(interactive()){
+      if (fixed_width != max_window){close(pb)}
+    }
 
     row.names(temporal_matrix) <- fixed_width
     row.names(temporal_matrix_lower) <- fixed_width
@@ -1456,20 +1450,24 @@ daily_response <- function(response, env_data, method = "cor",
 
   if (upper_limit != lower_limit){
 
-    pb <- txtProgressBar(min = 0, max = (upper_limit - lower_limit), style = 3)
-  }
+    if(interactive()){
+
+    pb <- txtProgressBar(min = 0, max = ceiling((upper_limit - lower_limit)/(skip_window_length*skip_window_position)), style = 3)
+
+      }
+    }
 
     b = 0
 
 
 
-  for (K in lower_limit:upper_limit) {
+  for (K in seq(lower_limit, upper_limit, by = skip_window_length)) {
 
     b = b + 1
 
-    for (j in (0 + offset_start -1): (ncol(env_data) - max((K + offset_end), offset_end))) {
+    for (j in seq((0 + offset_start -1), (ncol(env_data) - max((K + offset_end), offset_end)), by = skip_window_position)) {
 
-        if (aggregate_function == 'median'){
+       if (aggregate_function == 'median'){
         x <- apply(data.frame(env_data[1:nrow(env_data), (1 + j) : (j + K)]),1 , median, na.rm = TRUE)
       } else if (aggregate_function == 'sum'){
         x <- apply(data.frame(env_data[1:nrow(env_data), (1 + j) : (j + K)]),1 , sum, na.rm = TRUE)
@@ -1485,9 +1483,15 @@ daily_response <- function(response, env_data, method = "cor",
 
       if (!is.null(dc_method)){
 
-        x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                           pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                           span = dc_span, bass = dc_bass,  difference = dc_difference)
+        if (dc_method == "SLD"){
+
+        tmp_model <- lm(x ~ seq(1:length(x)))
+        tmp_pred <- predict(tmp_model)
+        tmp_res <- x - tmp_pred
+
+        x <- data.frame(x = tmp_res/sd(tmp_res))
+
+        }
 
       } else {
 
@@ -1495,6 +1499,7 @@ daily_response <- function(response, env_data, method = "cor",
 
       }
 
+# }
       x_list <- x
       colnames(x_list) <- paste0(j + 1, "_" ,j + K)
       row.names(x_list) <- row.names(env_data)
@@ -1575,11 +1580,14 @@ daily_response <- function(response, env_data, method = "cor",
 
     }
 
+      if(interactive()){
     if (upper_limit != lower_limit){setTxtProgressBar(pb, b)}
-
+      }
   }
 
+  if(interactive()){
     if (upper_limit != lower_limit){close(pb)}
+  }
 
   # temporal_matrix is given rownames and colnames. Rownames represent a
   # window width used fot calculations. Colnames represent the position of
@@ -1620,17 +1628,18 @@ daily_response <- function(response, env_data, method = "cor",
     temporal_matrix_upper <- temporal_matrix
 
     if (upper_limit != lower_limit){
-
-      pb <- txtProgressBar(min = 0, max = (upper_limit - lower_limit), style = 3)
+      if(interactive()){
+      pb <- txtProgressBar(min = 0, max = ceiling((upper_limit - lower_limit)/(skip_window_length*skip_window_position)), style = 3)
+      }
     }
     b = 0
 
-    for (K in lower_limit:upper_limit) {
+    for (K in seq(lower_limit, upper_limit, by = skip_window_length)) {
 
       b = b + 1
 
+      for (j in seq((0 + offset_start -1), (ncol(env_data) - max((K + offset_end), offset_end)), by = skip_window_position)) {
 
-      for (j in (0 + offset_start -1): (ncol(env_data) - max((K + offset_end), offset_end))) {
 
         if (aggregate_function == 'median'){
           x <- apply(data.frame(env_data[1:nrow(env_data), (1 + j) : (j + K)]),1 , median, na.rm = TRUE)
@@ -1648,9 +1657,15 @@ daily_response <- function(response, env_data, method = "cor",
 
         if (!is.null(dc_method)){
 
-          x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                             span = dc_span, bass = dc_bass,  difference = dc_difference)
+          if (dc_method == "SLD"){
+
+            tmp_model <- lm(x ~ seq(1:length(x)))
+            tmp_pred <- predict(tmp_model)
+            tmp_res <- x - tmp_pred
+
+            x <- data.frame(x = tmp_res/sd(tmp_res))
+
+          }
 
         } else {
 
@@ -1790,10 +1805,14 @@ daily_response <- function(response, env_data, method = "cor",
 
           }
       }
+      if(interactive()){
       if (upper_limit != lower_limit){setTxtProgressBar(pb, b)}
+      }
     }
 
-    if (upper_limit != lower_limit){close(pb)}
+    if(interactive()){
+      if (upper_limit != lower_limit){close(pb)}
+    }
 
     temporal_rownames <- as.vector(seq(from = lower_limit, to = upper_limit, by = 1))
     row.names(temporal_matrix) <- temporal_rownames
@@ -1828,18 +1847,18 @@ daily_response <- function(response, env_data, method = "cor",
     temporal_matrix_upper <- temporal_matrix
 
     if (upper_limit != lower_limit){
-
-      pb <- txtProgressBar(min = 0, max = (upper_limit - lower_limit), style = 3)
+      if(interactive()){
+      pb <- txtProgressBar(min = 0, max = ceiling((upper_limit - lower_limit)/(skip_window_length*skip_window_position)), style = 3)
+      }
     }
 
     b = 0
 
-    for (K in lower_limit:upper_limit) {
+    for (K in seq(lower_limit, upper_limit, by = skip_window_length)) {
 
       b = b + 1
 
-
-      for (j in (0 + offset_start -1): (ncol(env_data) - max((K + offset_end), offset_end))) {
+      for (j in seq((0 + offset_start -1), (ncol(env_data) - max((K + offset_end), offset_end)), by = skip_window_position)) {
 
         if (aggregate_function == 'median'){
           x <- apply(data.frame(env_data[1:nrow(env_data), (1 + j) : (j + K)]),1 , median, na.rm = TRUE)
@@ -1857,9 +1876,15 @@ daily_response <- function(response, env_data, method = "cor",
 
         if (!is.null(dc_method)){
 
-          x <- dplR::detrend(data.frame(x), method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                             span = dc_span, bass = dc_bass,  difference = dc_difference)
+          if (dc_method == "SLD"){
+
+            tmp_model <- lm(x ~ seq(1:length(x)))
+            tmp_pred <- predict(tmp_model)
+            tmp_res <- x - tmp_pred
+
+            x <- data.frame(x = tmp_res/sd(tmp_res))
+
+          }
 
         } else {
 
@@ -2023,10 +2048,14 @@ daily_response <- function(response, env_data, method = "cor",
         }
 
       }
+      if(interactive()){
       if (upper_limit != lower_limit){setTxtProgressBar(pb, b)}
+      }
     }
 
-    if (upper_limit != lower_limit){close(pb)}
+    if(interactive()){
+      if (upper_limit != lower_limit){close(pb)}
+    }
 
     temporal_rownames <- as.vector(seq(from = lower_limit, to = upper_limit, by = 1))
     row.names(temporal_matrix) <- temporal_rownames
@@ -2089,8 +2118,6 @@ daily_response <- function(response, env_data, method = "cor",
                        cross_validation = NA,
                        plot_heatmap = NA,
                        plot_extreme = NA,
-                       plot_specific = NA,
-                       PCA_output = NA,
                        type = "daily",
                        reference_window = reference_window,
                        boot_lower = temporal_matrix_lower,
@@ -2173,6 +2200,7 @@ daily_response <- function(response, env_data, method = "cor",
                                             (as.numeric(plot_column) +
                                                as.numeric(row_index) - 1)]),
                                  na.rm = TRUE))
+
   } else if (aggregate_function == 'min'){
     dataf <- data.frame(apply(data.frame(env_data[, as.numeric(plot_column):
                                                     (as.numeric(plot_column) +
@@ -2188,9 +2216,16 @@ daily_response <- function(response, env_data, method = "cor",
     # if detrending was applied, should also be applied here
     if (!is.null(dc_method)){
 
-      dataf <- dplR::detrend(dataf, method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                             span = dc_span, bass = dc_bass,  difference = dc_difference)
+      if (dc_method == "SLD"){
+
+        dataf <- as.numeric(dataf[,1])
+        tmp_model <- lm(dataf ~ seq(1:length(dataf)))
+        tmp_pred <- predict(tmp_model)
+        tmp_res <- dataf - tmp_pred
+
+        dataf <- data.frame(tmp_res/sd(tmp_res))
+
+      }
 
     }
 
@@ -2233,9 +2268,17 @@ daily_response <- function(response, env_data, method = "cor",
 
   if (!is.null(dc_method)){
 
-    dataf_full_original <- dplR::detrend(dataf_full_original, method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                                         pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                                         span = dc_span, bass = dc_bass,  difference = dc_difference)
+
+    if (dc_method == "SLD"){
+
+      dataf_full_original <- as.numeric(dataf_full_original[,1])
+      tmp_model <- lm(dataf_full_original ~ seq(1:length(dataf_full_original)))
+      tmp_pred <- predict(tmp_model)
+      tmp_res <- dataf_full_original - tmp_pred
+
+      dataf_full_original <- data.frame(tmp_res/sd(tmp_res))
+
+    }
 
   }
 
@@ -2325,9 +2368,16 @@ daily_response <- function(response, env_data, method = "cor",
       # if detrending was applied, should also be applied here
       if (!is.null(dc_method)){
 
-        dataf <- dplR::detrend(dataf, method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                               pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                               span = dc_span, bass = dc_bass,  difference = dc_difference)
+        if (dc_method == "SLD"){
+
+          dataf <- as.numeric(dataf[,1])
+          tmp_model <- lm(dataf ~ seq(1:length(dataf)))
+          tmp_pred <- predict(tmp_model)
+          tmp_res <- dataf - tmp_pred
+
+          dataf <- data.frame(tmp_res/sd(tmp_res))
+
+        }
 
       }
 
@@ -2363,9 +2413,16 @@ daily_response <- function(response, env_data, method = "cor",
 
     if (!is.null(dc_method)){
 
-      dataf_full_original <- dplR::detrend(dataf_full_original, method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                                           pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                                           span = dc_span, bass = dc_bass,  difference = dc_difference)
+      if (dc_method == "SLD"){
+
+        dataf_full_original <- as.numeric(dataf_full_original[,1])
+        tmp_model <- lm(dataf_full_original ~ seq(1:length(dataf_full_original)))
+        tmp_pred <- predict(tmp_model)
+        tmp_res <- dataf_full_original - tmp_pred
+
+        dataf_full_original <- data.frame(tmp_res/sd(tmp_res))
+
+      }
 
     }
 
@@ -2467,9 +2524,16 @@ daily_response <- function(response, env_data, method = "cor",
     # if detrending was applied, should also be applied here
     if (!is.null(dc_method)){
 
-      dataf <- dplR::detrend(dataf, method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                         pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                         span = dc_span, bass = dc_bass,  difference = dc_difference)
+      if (dc_method == "SLD"){
+
+        dataf <- as.numeric(dataf[,1])
+        tmp_model <- lm(dataf ~ seq(1:length(dataf)))
+        tmp_pred <- predict(tmp_model)
+        tmp_res <- dataf - tmp_pred
+
+        dataf <- data.frame(tmp_res/sd(tmp_res))
+
+      }
 
     }
 
@@ -2512,9 +2576,16 @@ daily_response <- function(response, env_data, method = "cor",
 
     if (!is.null(dc_method)){
 
-      dataf_full_original <- dplR::detrend(dataf_full_original, method = dc_method, nyrs = dc_nyrs, f = dc_f,
-                             pos.slope = dc_pos.slope, constrain.nls = dc_constrain.nls,
-                             span = dc_span, bass = dc_bass,  difference = dc_difference)
+      if (dc_method == "SLD"){
+
+        dataf_full_original <- as.numeric(dataf_full_original[,1])
+        tmp_model <- lm(dataf_full_original ~ seq(1:length(dataf_full_original)))
+        tmp_pred <- predict(tmp_model)
+        tmp_res <- dataf_full_original - tmp_pred
+
+        dataf_full_original <- data.frame(tmp_res/sd(tmp_res))
+
+      }
 
     }
 
@@ -2577,39 +2648,6 @@ daily_response <- function(response, env_data, method = "cor",
   ##############################################################################
   # If detrending was used, it also needs to be applied on optimized return
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
   # Element 5
   # Here we create the fifth element of the final list: Analysed period in the
   # form of min(year) - max(year), e.g. 1950 - 2015
@@ -2665,7 +2703,6 @@ daily_response <- function(response, env_data, method = "cor",
     journal_theme +
     ggtitle(paste("Analysed Period:", analysed_period, "\nMethod:", title_string))
 
-analysed_period
   # If there is more than one independent variable in the model,
   # transfer function is not given, since we should return a 3d model
   if (ncol(response) > 1){
@@ -3046,25 +3083,6 @@ for (m in 1:length(empty_list_datasets)){
     plot_heatmapA <- plot_heatmap(final_list, reference_window = reference_window, type = "daily")
     plot_extremeA <- plot_extreme(final_list, ylimits = ylimits, reference_window = reference_window, type = "daily")
 
-    width_sequence = seq(lower_limit, upper_limit)
-
-    if (is.null(plot_specific_window)){
-      (plot_specificA <- "plot_specific_window is not available. No plot_specific is made!")
-    } else if (fixed_width != 0){
-
-      if (fixed_width != plot_specific_window){
-        warning(paste0("plot_specific_window and fixed_width differ!",
-                       " fixed_wdith will be used to generate plot_specific!"))
-      }
-
-      plot_specific_window = fixed_width
-      plot_specificA <- plot_specific(final_list, window_width = plot_specific_window, ylimits = ylimits,
-                                      reference_window = reference_window)
-    } else if (plot_specific_window %in% width_sequence){
-      plot_specificA <- plot_specific(final_list, window_width = plot_specific_window, ylimits = ylimits,
-                                      reference_window = reference_window)
-    } else (plot_specificA <- "Selected plot_specific_window is not available. No plot_specific is made!")
-
     # Here, for the sake of simplicity, we create final list again
     if (method == "lm" | method == "brnn") {
       final_list <- list(calculations = temporal_matrix, method = method,
@@ -3075,8 +3093,6 @@ for (m in 1:length(empty_list_datasets)){
                          cross_validation = cross_validation,
                          plot_heatmap = plot_heatmapA,
                          plot_extreme = plot_extremeA,
-                         plot_specific = plot_specificA,
-                         PCA_output = PCA_result,
                          type = "daily",
                          reference_window = reference_window,
                          boot_lower = temporal_matrix_lower,
@@ -3094,8 +3110,6 @@ for (m in 1:length(empty_list_datasets)){
                          cross_validation = cross_validation,
                          plot_heatmap = plot_heatmapA,
                          plot_extreme = plot_extremeA,
-                         plot_specific = plot_specificA,
-                         PCA_output = PCA_result,
                          type = "daily",
                          reference_window = reference_window,
                          boot_lower = temporal_matrix_lower,

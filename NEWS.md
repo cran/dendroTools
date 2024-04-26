@@ -1,3 +1,14 @@
+# dendroTools 1.2.13
+* all examples have been streamlined to shorten the time required for executing R package checks
+* added detailed explanations for the necessity of using donttest{}
+
+# dendroTools 1.2.12
+* PCA option is removed from the daily_response and other similar functions
+* plot specific options is also removed
+* New climate detrending option is implemented, 'SLD', which stands for 'Simple Linear Detrending' and should be preferred
+* Two new arguments are implemented, 'skip_window_position' and 'skip_window_length' which allow for controlling the granularity of the analysis and can help in reducing computation time by focusing on a subset of the data
+* Spline detrending is now removed since it caused instability of the dendroTools package
+
 # dendroTools 1.2.11
 * response data frame can now also have a missing value, but only if "cor_na_use" argument is one of "complete.obs", "na.or.complete" or "pairwise.complete.obs"
 * an undocumented argument in internal function is now removed
