@@ -1,6 +1,6 @@
-83f88287f1ddb77d4876c8c27e3d9ff4 *DESCRIPTION
+a3bf6084d8c2bbd3571bb0c94cd8deb3 *DESCRIPTION
 caa15f4315495ccaceb8d939cfb83cfc *NAMESPACE
-857015e1c78ce60e4ccf5a7d5a0de1ef *NEWS.md
+5a454f27105c40bf0697cae7f4f6d3b3 *NEWS.md
 941db884e030c62939c2b240f4f01b24 *R/KRE_daily_temperatures.R
 25fe30e5351048a274c8ca9aaca29222 *R/LJ_daily_precipitation.R
 8effac089e6b91c82b9515eab7a7dcf7 *R/LJ_daily_temperatures.R
@@ -14,8 +14,8 @@ a9d13fda1f4ace2dff7124cb9bc02045 *R/boot_f_pcor.R
 2da25d731fdb8de03c0d8bb91e2c6131 *R/compare_methods.R
 cb1289a4b0d78b855f275657b30d3a95 *R/count_ones.R
 3051cf564bbabd01b846894410211b7b *R/critical.r
-27e79e2495a864d163146263c6d747de *R/daily_response.R
-4a43cfcaa4c0abc27cf394c540cbf65d *R/daily_response_seascorr.R
+7318e9f893d9ac708aeb9188a7a063a5 *R/daily_response.R
+f4e1495992ab2f1c32631965e4f1952c *R/daily_response_seascorr.R
 29375dac86e0ad1e9663ad25906a66db *R/data_MVA.R
 3b2684bf18a587db81fc729a2eb84c55 *R/data_TRW.R
 ce23b72d627c9d930cd0ba041dc1fe0a *R/data_TRW_1.R
@@ -30,8 +30,8 @@ eb34cb921a8b61fd743ff749a4933e5e *R/example_dataset_1.R
 e106e3535a9802ce5a10f81f601b752d *R/generics.R
 09bb7d451d9a60787c9ab913d0a8f15e *R/generics2.R
 0daa39e6f44dab4f333364044a0f0767 *R/glimpse_daily_data.R
-49682e09a5925464bff5903ca6db4104 *R/monthly_response.R
-6d19c7d775c1d5ab29174f8f6fc69686 *R/monthly_response_seascorr.R
+6ca523cc967632a056dd35d4c24e940c *R/monthly_response.R
+d3518fbc5ef34788b42cde73f443021f *R/monthly_response_seascorr.R
 022084a6b499390175375d6b607ff3fb *R/plot_extreme.R
 3c1ba8cd1a31290289dbd848e7c6c3bd *R/plot_heatmap.R
 6a934baca31670c59a832f294bb96ed0 *R/round2.R
@@ -41,7 +41,7 @@ d235f677c4aa2afcd04b8dceab894351 *R/swit272.R
 aed66d1ced5bf26b360466cb8b77b92c *R/swit272_daily_precipitation.R
 d140e45938636253247958f8732f8c66 *R/swit272_daily_temperatures.R
 61fd016dbb3a138efc0852a73195a27b *R/years_to_rownames.R
-ec0c350384daccbb6914a12d909fcd07 *build/vignette.rds
+f53bd8c0698b41c53bef45925b68e8f2 *build/vignette.rds
 23059183442046aaa444327b461446b7 *data/KRE_daily_temperatures.rda
 4aaf6977224ac419b169ee799bdc40ea *data/LJ_daily_precipitation.rda
 3eb56c682bd3abcd0b49eca09003efe0 *data/LJ_daily_temperatures.rda
@@ -61,12 +61,12 @@ b71b65047a994d681ce6dab456fd8e1d *data/dataset_MVA_individual.rda
 e20bfb8bee7a1b0d31d3bf13ac4a765a *data/swit272_daily_precipitation.rda
 2adeb60f8895eb6d21e0400a148a929c *data/swit272_daily_temperatures.rda
 9d8a75ebac640cec23c34b9c8c218ecc *inst/CITATION
-6489b7c1ea79170bc3b0fe796610f54b *inst/doc/Compare_different_regression_methods.R
+bf9dfba24380acc1c3a3bd4c125debba *inst/doc/Compare_different_regression_methods.R
 41d2403a03ce7fd8d85140a2028218e9 *inst/doc/Compare_different_regression_methods.Rmd
-3759fcf311bd8226f1c21d48b965ab39 *inst/doc/Compare_different_regression_methods.html
-a0b26bcc4eb7439c8b6db79eea8fd1a9 *inst/doc/Examples_with_daily_climate_data.R
+0d91df91d86bfd3875a86c747f576de9 *inst/doc/Compare_different_regression_methods.html
+b3a7e955eaa7784d06d0fcfc2b22d686 *inst/doc/Examples_with_daily_climate_data.R
 e1652658c2d3d05232f309ae004b1952 *inst/doc/Examples_with_daily_climate_data.Rmd
-07b74c11c33f79a0039faec2013ad416 *inst/doc/Examples_with_daily_climate_data.html
+62077ee8287d7b746868121fa3d351de *inst/doc/Examples_with_daily_climate_data.html
 cd6b388ab4066e2021a6f0971dcab554 *man/KRE_daily_temperatures.Rd
 682d9033c830e74d41ec9cf4f0a8f3bd *man/LJ_daily_precipitation.Rd
 86f619b4db7ee58bf64298c82d7e8ce4 *man/LJ_daily_temperatures.Rd
@@ -80,8 +80,8 @@ d206a50de3d88de84a3db4ed3a0b8198 *man/boot_f_lm.Rd
 679c6042c67a9a43906c212a9a9d8e5e *man/compare_methods.Rd
 381104b9fe22ad48560c296e93da937b *man/count_ones.Rd
 08d259e276998d536d4ac06882570e9b *man/critical_r.Rd
-cdb711fd7a8684ae2afebb5ade72d084 *man/daily_response.Rd
-ad35ec66af14f79e6250c47806959e09 *man/daily_response_seascorr.Rd
+08f2aca9b3e46a05066e420bca5de00e *man/daily_response.Rd
+0234e8e335d5ebf9064e6583e63251fb *man/daily_response_seascorr.Rd
 6e0eddc546de97063bf43d77ea526efd *man/data_MVA.Rd
 e9d93314bda301384d8ed14b17310be9 *man/data_TRW.Rd
 775dd392a9992cdc32d4a2fad964d1b1 *man/data_TRW_1.Rd

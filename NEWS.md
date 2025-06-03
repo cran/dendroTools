@@ -1,3 +1,7 @@
+# dendroTools 1.2.14
+* there was a minor bug in aggregating climate-data when creatng the dataset for optimized_return
+* Authors@R field was added to DESCRIPTION 
+
 # dendroTools 1.2.13
 * all examples have been streamlined to shorten the time required for executing R package checks
 * added detailed explanations for the necessity of using donttest{}
