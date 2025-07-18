@@ -1,6 +1,6 @@
-a3bf6084d8c2bbd3571bb0c94cd8deb3 *DESCRIPTION
+6d27ec5a96c1ecede1131cf7a076af2f *DESCRIPTION
 caa15f4315495ccaceb8d939cfb83cfc *NAMESPACE
-5a454f27105c40bf0697cae7f4f6d3b3 *NEWS.md
+9c5de736d3ac44f95980e53b0fd42934 *NEWS.md
 941db884e030c62939c2b240f4f01b24 *R/KRE_daily_temperatures.R
 25fe30e5351048a274c8ca9aaca29222 *R/LJ_daily_precipitation.R
 8effac089e6b91c82b9515eab7a7dcf7 *R/LJ_daily_temperatures.R
@@ -14,8 +14,8 @@ a9d13fda1f4ace2dff7124cb9bc02045 *R/boot_f_pcor.R
 2da25d731fdb8de03c0d8bb91e2c6131 *R/compare_methods.R
 cb1289a4b0d78b855f275657b30d3a95 *R/count_ones.R
 3051cf564bbabd01b846894410211b7b *R/critical.r
-7318e9f893d9ac708aeb9188a7a063a5 *R/daily_response.R
-f4e1495992ab2f1c32631965e4f1952c *R/daily_response_seascorr.R
+8847b9fc1706fd963191784f4cf65ec6 *R/daily_response.R
+4c2f38692faff2dd958c5bffa67ebe35 *R/daily_response_seascorr.R
 29375dac86e0ad1e9663ad25906a66db *R/data_MVA.R
 3b2684bf18a587db81fc729a2eb84c55 *R/data_TRW.R
 ce23b72d627c9d930cd0ba041dc1fe0a *R/data_TRW_1.R
@@ -30,8 +30,8 @@ eb34cb921a8b61fd743ff749a4933e5e *R/example_dataset_1.R
 e106e3535a9802ce5a10f81f601b752d *R/generics.R
 09bb7d451d9a60787c9ab913d0a8f15e *R/generics2.R
 0daa39e6f44dab4f333364044a0f0767 *R/glimpse_daily_data.R
-6ca523cc967632a056dd35d4c24e940c *R/monthly_response.R
-d3518fbc5ef34788b42cde73f443021f *R/monthly_response_seascorr.R
+972fa9b1e1867bc1cf3e9e8e50c091bb *R/monthly_response.R
+a81168e0594b755fb6758c262bc5057d *R/monthly_response_seascorr.R
 022084a6b499390175375d6b607ff3fb *R/plot_extreme.R
 3c1ba8cd1a31290289dbd848e7c6c3bd *R/plot_heatmap.R
 6a934baca31670c59a832f294bb96ed0 *R/round2.R
@@ -63,10 +63,10 @@ e20bfb8bee7a1b0d31d3bf13ac4a765a *data/swit272_daily_precipitation.rda
 9d8a75ebac640cec23c34b9c8c218ecc *inst/CITATION
 bf9dfba24380acc1c3a3bd4c125debba *inst/doc/Compare_different_regression_methods.R
 41d2403a03ce7fd8d85140a2028218e9 *inst/doc/Compare_different_regression_methods.Rmd
-0d91df91d86bfd3875a86c747f576de9 *inst/doc/Compare_different_regression_methods.html
+75a91accca8472cae28b961298fe883d *inst/doc/Compare_different_regression_methods.html
 b3a7e955eaa7784d06d0fcfc2b22d686 *inst/doc/Examples_with_daily_climate_data.R
 e1652658c2d3d05232f309ae004b1952 *inst/doc/Examples_with_daily_climate_data.Rmd
-62077ee8287d7b746868121fa3d351de *inst/doc/Examples_with_daily_climate_data.html
+6b7a0ecfc3e849604624ff27e99ea71e *inst/doc/Examples_with_daily_climate_data.html
 cd6b388ab4066e2021a6f0971dcab554 *man/KRE_daily_temperatures.Rd
 682d9033c830e74d41ec9cf4f0a8f3bd *man/LJ_daily_precipitation.Rd
 86f619b4db7ee58bf64298c82d7e8ce4 *man/LJ_daily_temperatures.Rd
@@ -94,8 +94,8 @@ e9d93314bda301384d8ed14b17310be9 *man/data_TRW.Rd
 bd0c6dbaae52719a23989579250c98f7 *man/example_proxies_1.Rd
 aecf1d4133354b158185acbfdeeaa57e *man/example_proxies_individual.Rd
 c14faea124fde7cf1bcc0b21053676b7 *man/glimpse_daily_data.Rd
-eab11b8fb6a30af712bee907b2f8bc88 *man/monthly_response.Rd
-adf74962154ea1490710c21464a7a819 *man/monthly_response_seascorr.Rd
+30295e361b25f6a2bd39282a6b1a2a92 *man/monthly_response.Rd
+5a761d2cbf097fe2bba438ec18292efe *man/monthly_response_seascorr.Rd
 6ddd7eb51c30531a45fc9292e0e8a1dc *man/plot_extreme.Rd
 0369a097ae0fa45eb1bfa1a67f3a6901 *man/plot_heatmap.Rd
 9ffa29a49bc97f768dd043791670caf5 *man/round2.Rd
