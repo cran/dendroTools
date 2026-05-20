@@ -9,6 +9,7 @@ monthly_response_seascorr(
   env_data_primary,
   env_data_control,
   previous_year = FALSE,
+  number_previous_years = NULL,
   pcor_method = "pearson",
   remove_insignificant = TRUE,
   lower_limit = 1,
@@ -18,7 +19,9 @@ monthly_response_seascorr(
   row_names_subset = FALSE,
   reference_window = "start",
   aggregate_function_env_data_primary = "mean",
+  quantile_prob_env_data_primary = 0.5,
   aggregate_function_env_data_control = "mean",
+  quantile_prob_env_data_control = 0.5,
   temporal_stability_check = "sequential",
   k = 2,
   k_running_window = 30,
@@ -31,8 +34,7 @@ monthly_response_seascorr(
   boot_n = 1000,
   boot_ci_type = "norm",
   boot_conf_int = 0.95,
-  month_interval = ifelse(c(previous_year == TRUE, previous_year == TRUE), c(-1, 12),
-    c(1, 12)),
+  month_interval = NULL,
   dc_method = NULL,
   pcor_na_use = "pairwise.complete"
 )
@@ -62,9 +64,15 @@ i.e. Year, Month and third column representing values of mean temperatures, sum
 of precipitation etc. If tidy data is passed to the function, set the argument
 tidy_env_data_control to TRUE.}
 
-\item{previous_year}{if set to TRUE, env_data_primary, env_data_control and
-response variables will be rearranged in a way, that also previous year will
-be used for calculations of selected statistical metric.}
+\item{previous_year}{logical. If TRUE, previous-year climate data are included
+in the analysis. If FALSE, no previous-year climate data are included and
+number_previous_years is ignored.}
+
+\item{number_previous_years}{integer between 1 and 5 specifying how many
+previous years should be included in the environmental matrices when
+previous_year = TRUE. For example, number_previous_years = 2 uses climate
+data from years t - 2, t - 1 and t for response year t. If NULL and
+previous_year = TRUE, one previous year is included.}
 
 \item{pcor_method}{a character string indicating which partial correlation
 coefficient is to be computed. One of "pearson" (default), "kendall", or
@@ -97,11 +105,19 @@ to the ending day of window calculation.}
 
 \item{aggregate_function_env_data_primary}{character string specifying how the
 monthly data from env_data_primary should be aggregated. The default is 'mean',
-the two other options are 'median' and 'sum'}
+the other options are 'median', 'sum' and 'quantile'.}
+
+\item{quantile_prob_env_data_primary}{numeric value between 0 and 1 specifying
+the quantile probability used when aggregate_function_env_data_primary =
+'quantile'. For example, 0.95 calculates the 95th percentile. The default is 0.5.}
 
 \item{aggregate_function_env_data_control}{character string specifying how the
 monthly data from env_data_control should be aggregated. The default is 'mean',
-the two other options are 'median' and 'sum'}
+the other options are 'median', 'sum' and 'quantile'.}
+
+\item{quantile_prob_env_data_control}{numeric value between 0 and 1 specifying
+the quantile probability used when aggregate_function_env_data_control =
+'quantile'. For example, 0.95 calculates the 95th percentile. The default is 0.5.}
 
 \item{temporal_stability_check}{character string, specifying, how temporal stability
 between the optimal selection and response variable(s) will be analysed. Current
@@ -142,10 +158,16 @@ required. The value should be any subset of the values c("norm","basic", "stud",
 \item{boot_conf_int}{A scalar or vector containing the confidence level(s) of
 the required interval(s)}
 
-\item{month_interval}{a vector of two values: lower and upper time interval of
-months that will be used to calculate statistical metrics. Negative values indicate
-previous growing season months. This argument overwrites the calculation
-limits defined by lower_limit and upper_limit arguments.}
+\item{month_interval}{a vector of two values defining the interval of months
+used for calculations. Positive values indicate months in the current year.
+Negative values indicate months in the previous-year block and are used only
+when previous_year = TRUE. If previous_year = FALSE and negative values are
+supplied, month_interval is ignored and the analysis is performed for the
+current year only using month_interval = c(1, 12). If number_previous_years > 1,
+the previous-year block starts with the earliest included previous year. For
+example, previous_year = TRUE, number_previous_years = 2 and
+month_interval = c(-1, 12) analyses the full sequence from January of year
+t - 2 to December of year t.}
 
 \item{dc_method}{a character string to determine the method to detrend climate
 data.  Possible values are "none" (default) and "SLD" which refers to Simple
@@ -158,7 +180,7 @@ coefficients. This must be (an abbreviation of) one of the strings "all.obs",
 (default). See also the documentation for the base partial.r in psych R package}
 }
 \value{
-a list with 15 elements:
+a list with 17 elements:
 \enumerate{
  \item $calculations - a matrix with calculated metrics
  \item $method - the character string of a method
@@ -175,6 +197,8 @@ a list with 15 elements:
  \item $reference_window - character string, which reference window was used for calculations
  \item $aggregated_climate_primary - matrix with all aggregated climate series of primary data
  \item $aggregated_climate_control - matrix with all aggregated climate series of control data
+ \item $previous_year - logical indicating whether previous-year climate data were used
+ \item $number_previous_years - integer indicating how many previous years were used
 }
 }
 \description{
@@ -239,6 +263,23 @@ example_extended <- monthly_response_seascorr(response = data_MVA,
 # plot(example_extended, type = 2)
 # example_extended$optimized_return
 # example_extended$optimized_return_all
+
+# 3 Example using quantiles for primary and control variables
+example_quantile <- monthly_response_seascorr(
+   response = data_MVA,
+   env_data_primary = LJ_monthly_temperatures,
+   env_data_control = LJ_monthly_precipitation,
+   row_names_subset = TRUE,
+   fixed_width = 3,
+   previous_year = TRUE,
+   aggregate_function_env_data_primary = "quantile",
+   quantile_prob_env_data_primary = 0.50,
+   aggregate_function_env_data_control = "quantile",
+   quantile_prob_env_data_control = 0.50,
+   tidy_env_data_primary = FALSE,
+   tidy_env_data_control = TRUE)
+
+ # summary(example_quantile)
 
 }
 }
