@@ -12,6 +12,9 @@ monthly_response_seascorr(
   number_previous_years = NULL,
   pcor_method = "pearson",
   remove_insignificant = TRUE,
+  remove_insignificant_method = "alpha",
+  perm_n = 999,
+  cluster_threshold = "nominal",
   lower_limit = 1,
   upper_limit = 12,
   fixed_width = 0,
@@ -36,7 +39,15 @@ monthly_response_seascorr(
   boot_conf_int = 0.95,
   month_interval = NULL,
   dc_method = NULL,
-  pcor_na_use = "pairwise.complete"
+  dc_nyrs = NULL,
+  dc_f = 0.5,
+  dc_difference = FALSE,
+  dc_span = "cv",
+  dc_bass = 0,
+  dc_scale = NULL,
+  dc_env_data_control = NULL,
+  pcor_na_use = "everything",
+  pcor_control = FALSE
 )
 }
 \arguments{
@@ -78,8 +89,76 @@ previous_year = TRUE, one previous year is included.}
 coefficient is to be computed. One of "pearson" (default), "kendall", or
 "spearman", can be abbreviated.}
 
-\item{remove_insignificant}{if set to TRUE, removes all correlations bellow
-the significant threshold level, based on a selected alpha.}
+\item{remove_insignificant}{if set to TRUE, removes all partial correlations
+that do not meet the criterion set by remove_insignificant_method.}
+
+\item{remove_insignificant_method}{the criterion used when
+remove_insignificant = TRUE. One of "alpha" (per-window significance
+threshold; the default), "boot" (bootstrap confidence interval excludes
+zero; requires boot = TRUE), "fdr_BY" (false discovery rate,
+Benjamini-Yekutieli, valid under arbitrary dependence between windows),
+"fdr_BH" (Benjamini-Hochberg, valid under positive dependence and less
+conservative), "maxstat" (max-statistic permutation test), "sidak"
+(Sidak correction on the effective number of tests) or "cluster"
+(cluster-extent inference). The "alpha" and "boot" criteria are applied per
+window and therefore do not account for the number of windows screened; the
+remaining criteria do.
+Degrees of freedom account for the control variable throughout.
+
+"maxstat" builds a null distribution of the largest absolute partial
+correlation obtained anywhere in the search by repeatedly shuffling the
+response, and retains only windows exceeding the resulting threshold. It
+makes no distributional assumptions but requires perm_n re-evaluations of
+the whole search.
+
+"sidak" targets the same family-wise error rate but estimates it
+analytically and requires no permutations. The effective number of
+independent tests among the screened primary windows is obtained from the
+eigenvalues of their correlation matrix following Li and Ji (2005), and a
+Sidak correction is applied to that number rather than to the nominal count
+of windows.
+Years that are missing in some of the windows, such as the first years
+removed by dc_method = "Ar", are left out of this estimate, rather than
+the windows themselves.
+
+"sidak" is an approximation to "maxstat", and a rougher one for partial
+correlations than for ordinary ones, because the null distribution also
+depends on the control series. Across 54 combinations of site and
+primary/control pairing the two thresholds agreed to within 0.020 on
+average, with a maximum discrepancy of 0.046. The approximation is close to
+exact when the primary variable is strongly autocorrelated (mean error
+-0.005 for temperature controlling for precipitation) and permissive when
+it is not (mean error -0.031 for precipitation controlling for
+temperature), because the eigenvalue approach does not represent temporal
+autocorrelation. "maxstat" is therefore preferable for final results, while
+"sidak" suits exploratory work.
+
+"cluster" is cluster-extent inference, adapted from neuroimaging. The
+surface is thresholded at cluster_threshold, connected regions of
+supra-threshold windows are identified, and each region's mass, the sum of
+absolute partial correlations inside it, is compared against the largest
+mass arising in permuted surfaces. It controls the family-wise error rate
+over CLUSTERS rather than over windows, so it establishes that a region
+contains signal without identifying which windows within it carry it.
+
+In tree-ring response surfaces this method has little discriminating power.
+A real climate signal forms one large connected region whose mass greatly
+exceeds anything the permuted surfaces produce, so every cluster that forms
+is usually retained and the permutation step rarely rejects. The number of
+windows kept is then determined by cluster_threshold rather than by the
+data. It is provided for completeness and comparison; "maxstat" or "sidak"
+are preferable when the question is which windows carry signal.}
+
+\item{perm_n}{number of permutations used when
+remove_insignificant_method = "maxstat". Defaults to 999. Ignored by all
+other criteria.}
+
+\item{cluster_threshold}{the absolute partial correlation at which clusters
+are formed when remove_insignificant_method = "cluster". Either "nominal",
+the default, which uses the critical correlation at the chosen alpha, or a
+single number between 0 and 1. This is a free parameter and it largely
+determines how many windows are retained, so the value used is reported in
+$significance_filter. Ignored by all other criteria.}
 
 \item{lower_limit}{lower limit of window width (i.e. number of consecutive months
 to be used for calculations)}
@@ -105,7 +184,14 @@ to the ending day of window calculation.}
 
 \item{aggregate_function_env_data_primary}{character string specifying how the
 monthly data from env_data_primary should be aggregated. The default is 'mean',
-the other options are 'median', 'sum' and 'quantile'.}
+the other options are 'median', 'sum', 'quantile' and 'SPEI'.
+Missing months are skipped, so 'sum' adds only the months that are
+available; a window without any value is NA. 'SPEI' calculates the
+Standardized Precipitation-Evapotranspiration Index of each window from
+the monthly climatic water balance (precipitation minus potential
+evapotranspiration, see water_balance()) in env_data_primary, as described for
+aggregate_function in monthly_response(). A window that includes a missing
+month is NA in that year.}
 
 \item{quantile_prob_env_data_primary}{numeric value between 0 and 1 specifying
 the quantile probability used when aggregate_function_env_data_primary =
@@ -113,7 +199,14 @@ the quantile probability used when aggregate_function_env_data_primary =
 
 \item{aggregate_function_env_data_control}{character string specifying how the
 monthly data from env_data_control should be aggregated. The default is 'mean',
-the other options are 'median', 'sum' and 'quantile'.}
+the other options are 'median', 'sum', 'quantile' and 'SPEI'.
+Missing months are skipped, so 'sum' adds only the months that are
+available; a window without any value is NA. 'SPEI' calculates the
+Standardized Precipitation-Evapotranspiration Index of each window from
+the monthly climatic water balance (precipitation minus potential
+evapotranspiration, see water_balance()) in env_data_control, as described for
+aggregate_function in monthly_response(). A window that includes a missing
+month is NA in that year.}
 
 \item{quantile_prob_env_data_control}{numeric value between 0 and 1 specifying
 the quantile probability used when aggregate_function_env_data_control =
@@ -146,14 +239,19 @@ data frame with three columns: "Year", "Month", "Precipitation/Temperature/etc."
 \item{tidy_env_data_control}{if set to TRUE, env_data_control should be inserted as a
 data frame with three columns: "Year", "Month", "Precipitation/Temperature/etc."}
 
-\item{boot}{logical, if TRUE, bootstrap procedure will be used to calculate
-partial correlation coefficients}
+\item{boot}{logical, if TRUE, bootstrap confidence intervals are calculated
+for the partial correlation coefficients and returned as $boot_lower and
+$boot_upper. The coefficients themselves are those of the observed data, as
+with boot = FALSE. Versions before 2.0.0 reported the mean of the bootstrap
+replicates instead.}
 
 \item{boot_n}{The number of bootstrap replicates}
 
-\item{boot_ci_type}{A character string representing the type of bootstrap intervals
-required. The value should be any subset of the values c("norm","basic", "stud",
-"perc", "bca").}
+\item{boot_ci_type}{A character string representing the type of bootstrap
+intervals: "norm" (default), "basic", "perc" or "bca". "bca" needs boot_n of
+at least the number of analysed years. With fewer replicates
+boot::boot.ci() cannot estimate bca intervals, so they are all NA, and a
+warning is given. Studentized intervals ("stud") are not available.}
 
 \item{boot_conf_int}{A scalar or vector containing the confidence level(s) of
 the required interval(s)}
@@ -169,18 +267,90 @@ example, previous_year = TRUE, number_previous_years = 2 and
 month_interval = c(-1, 12) analyses the full sequence from January of year
 t - 2 to December of year t.}
 
-\item{dc_method}{a character string to determine the method to detrend climate
-data.  Possible values are "none" (default) and "SLD" which refers to Simple
-Linear Detrending}
+\item{dc_method}{a character string specifying how the aggregated climate
+series of each moving window should be detrended before the partial
+correlation is calculated. Detrending is applied to the aggregated series,
+i.e. to a vector with one value per year, and not to the raw monthly
+data. By default the same detrending is applied to the windows of
+env_data_primary and env_data_control; see dc_env_data_control to detrend
+the control windows differently. Possible values are "none" (or NULL, the default, no
+detrending), "SLD" (Simple Linear Detrending, the historical dendroTools
+option), and the smoothers "Spline", "Mean", "Ar" and "Friedman", which
+follow dplR::detrend(). The smoothers are fitted in chronological order of
+the years given by the row names. "Ar" (prewhitening) leaves missing values
+at the start of each detrended window, so pcor_na_use is changed to
+"pairwise.complete.obs", with a warning, unless it already excludes
+missing values.
+The growth-specific options of dplR::detrend() ("ModNegExp",
+"ModHugershoff", "AgeDepSpline") are not available, because they assume
+strictly positive series with a biological growth trend.}
+
+\item{dc_nyrs}{a number giving the rigidity of the smoothing spline when
+dc_method = "Spline". Defaults to NULL, i.e. 0.67 times the length of the
+series, exactly as in dplR::detrend(). Ignored by the other methods.}
+
+\item{dc_f}{a number between 0 and 1 giving the frequency response at the
+wavelength given by dc_nyrs when dc_method = "Spline". Defaults to 0.5.
+Ignored by the other methods.}
+
+\item{dc_difference}{logical. If FALSE (default, as in dplR::detrend()),
+the detrended series is calculated as a ratio between the observed series
+and the fitted curve. If TRUE, it is calculated as a difference. Ratio
+detrending is only defined for strictly positive data, such as precipitation
+sums, so the function stops if a data frame whose windows are detrended by
+ratios, env_data_primary or env_data_control, contains negative values. Windows whose aggregated series still contains a zero, for
+example a completely dry month, are returned as NA. For temperature
+and for any other variable that can be negative, use dc_difference = TRUE.
+Ignored when dc_method = "SLD", which is always residual based.}
+
+\item{dc_span}{the span used by the Friedman super smoother when
+dc_method = "Friedman". Either "cv" (default, cross-validation) or a
+number between 0 and 1. See also stats::supsmu(). Ignored by the other
+methods.}
+
+\item{dc_bass}{a number between 0 and 10 controlling the smoothness of the
+Friedman super smoother when dc_method = "Friedman". Defaults to 0. See also
+stats::supsmu(). Ignored by the other methods.}
+
+\item{dc_scale}{logical or NULL. If TRUE, the detrended series is divided by
+the standard deviation of its own values. The default (NULL) uses the
+convention of the selected method: TRUE for dc_method = "SLD", which
+preserves the behaviour of earlier dendroTools versions, and FALSE for the
+dplR methods, which are not rescaled in dplR::detrend(). Rescaling does not
+affect partial correlations, but it does affect the scale of
+$optimized_return and of the transfer function.}
+
+\item{dc_env_data_control}{NULL (default) or a named list of detrending
+settings for the windows of env_data_control. With NULL, the control windows
+are detrended exactly like the primary windows. A list replaces any of
+dc_method, dc_nyrs, dc_f, dc_difference, dc_span, dc_bass and dc_scale for
+the control windows only, and the settings it does not name are taken from
+the arguments above. For example, dc_method = "Spline", dc_difference =
+TRUE and dc_env_data_control = list(dc_difference = FALSE) detrend
+temperature (primary) by differences and precipitation (control) by
+ratios, and dc_env_data_control = list(dc_method = "none") leaves the
+control windows untouched.}
 
 \item{pcor_na_use}{an optional character string giving a method for computing
 covariances in the presence of missing values for partial correlation
 coefficients. This must be (an abbreviation of) one of the strings "all.obs",
-"everything", "complete.obs", "na.or.complete", or "pairwise.complete.obs"
-(default). See also the documentation for the base partial.r in psych R package}
+"everything" (default), "complete.obs", "na.or.complete", or
+"pairwise.complete.obs". See also the documentation for the base partial.r in
+psych R package}
+
+\item{pcor_control}{logical. If TRUE, the partial correlations of the
+response with the control variable, controlling for the primary variable,
+are also calculated for every window. They are what the function returns
+when env_data_primary and env_data_control, and their settings, are
+swapped. They are filtered with the same significance method and settings
+as the primary partial correlations, with permutation methods against the
+same permutations, and returned as $calculations_control. plot(x, type = 3)
+shows them as a heatmap, and summary() also reports the strongest of them,
+its window, and the value in the optimal window of the primary variable.
+The primary results do not change. Default is FALSE.}
 }
 \value{
-a list with 17 elements:
+a list with elements including:
 \enumerate{
  \item $calculations - a matrix with calculated metrics
  \item $method - the character string of a method
@@ -195,10 +365,32 @@ a list with 17 elements:
  \item $plot_extreme - ggplot2 object: line plot of a row with the highest value in a matrix of calculated metrics
  \item $type - the character string describing type of analysis: monthly or monthly
  \item $reference_window - character string, which reference window was used for calculations
+ \item $boot_lower - matrix with lower limits of bootstrap confidence intervals
+ \item $boot_upper - matrix with upper limits of bootstrap confidence intervals
  \item $aggregated_climate_primary - matrix with all aggregated climate series of primary data
  \item $aggregated_climate_control - matrix with all aggregated climate series of control data
+ \item $significance_filter - list describing which significance filter was
+ applied, the criterion used, and how many matrix cells were retained or removed
  \item $previous_year - logical indicating whether previous-year climate data were used
  \item $number_previous_years - integer indicating how many previous years were used
+ \item $detrending - information about the climate detrending applied, a
+ list with the elements primary and control, each giving the method and the
+ settings used for those windows, or "none"
+ \item $variance_partitioning - a data frame for the optimal window: the
+ correlations of the response with the primary and the control series and
+ between them (r_response_primary, r_response_control, r_primary_control),
+ both partial correlations (pcor_primary, pcor_control), the variance of the
+ response explained by both series together (r_squared) and how it splits
+ into a part unique to the primary series (unique_primary), a part unique to
+ the control series (unique_control) and a part they share (shared, negative
+ when one series suppresses the other). For pcor_method = "spearman" the
+ split refers to ranks; for "kendall" it is NA
+ \item with pcor_control = TRUE: $calculations_control - a matrix with the
+ partial correlations of the response with the control variable,
+ controlling for the primary variable; $boot_lower_control and
+ $boot_upper_control - their bootstrap confidence intervals;
+ $significance_filter_control - the significance filter applied to them;
+ $plot_heatmap_control - their heatmap, also shown by plot(x, type = 3)
 }
 }
 \description{
@@ -253,7 +445,7 @@ example_extended <- monthly_response_seascorr(response = data_MVA,
    remove_insignificant = FALSE,
    aggregate_function_env_data_primary = 'mean',
    aggregate_function_env_data_control = 'mean',
-   alpha = 0.05, pcor_na_use = "pairwise.complete",
+   alpha = 0.05, pcor_na_use = "everything",
    reference_window = "end",
    tidy_env_data_primary = FALSE,
    tidy_env_data_control = TRUE)
@@ -280,6 +472,36 @@ example_quantile <- monthly_response_seascorr(
    tidy_env_data_control = TRUE)
 
  # summary(example_quantile)
+
+# 4 Example with climate detrending, following dplR::detrend(). The same
+# detrending is applied to the primary and the control windows (see
+# dc_env_data_control to set it separately). The temperatures cross zero,
+# so differences are used instead of ratios.
+example_detrended <- monthly_response_seascorr(response = data_MVA,
+   env_data_primary = LJ_monthly_temperatures,
+   env_data_control = LJ_monthly_precipitation,
+   row_names_subset = TRUE,
+   remove_insignificant = FALSE,
+   tidy_env_data_primary = FALSE,
+   tidy_env_data_control = TRUE,
+   dc_method = "Friedman", dc_difference = TRUE)
+
+# example_detrended$detrending
+
+# 5 Partial correlations with both variables: temperature controlling for
+# precipitation, and precipitation controlling for temperature
+example_both <- monthly_response_seascorr(response = data_MVA,
+   env_data_primary = LJ_monthly_temperatures,
+   env_data_control = LJ_monthly_precipitation,
+   row_names_subset = TRUE,
+   remove_insignificant = FALSE,
+   tidy_env_data_primary = FALSE,
+   tidy_env_data_control = TRUE,
+   pcor_control = TRUE)
+
+# summary(example_both)
+# example_both$variance_partitioning
+# plot(example_both, type = 3)
 
 }
 }

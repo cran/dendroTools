@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Jernej Jevšenak" />
+
+<meta name="date" content="2026-11-23" />
+
+<title>Partial correlations with the seascorr functions</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Partial correlations with the seascorr
+functions</h1>
+<h4 class="author">Jernej Jevšenak</h4>
+<h4 class="date">2026-11-23</h4>
+
+
+
+<style>
+body {
+text-align: justify; font-size: 16px}
+</style>
+<div id="introduction" class="section level1">
+<h1>1 Introduction</h1>
+<p>Temperature and precipitation are correlated: in many regions, warm
+months are also dry. A simple correlation between a tree-ring chronology
+and temperature therefore partly reflects precipitation, and the other
+way round. A partial correlation removes the linear effect of a second,
+control variable from both the chronology and the variable of interest,
+and describes the relationship that remains.</p>
+<p><em>monthly_response_seascorr()</em> and
+<em>daily_response_seascorr()</em> calculate partial correlations for
+all moving windows of monthly or daily climate data (Jevšenak 2020),
+just as <em>monthly_response()</em> and <em>daily_response()</em>
+calculate simple correlations. For every window, the primary variable
+(<code>env_data_primary</code>) and the control variable
+(<code>env_data_control</code>) are aggregated over the same months or
+days, and the partial correlation between the response and the primary
+variable, controlling for the control variable, is calculated.</p>
+<p>The functions build on seascorr (Meko et al. 2011), which summarises
+the relationship with a primary climate variable by simple correlations
+and the relationship with a secondary variable by partial correlations,
+controlling for the primary variable. In dendroTools, the partial
+correlations are calculated for <code>env_data_primary</code>, which
+therefore corresponds to the secondary variable of seascorr. The simple
+correlations of the other variable can be calculated with
+<em>monthly_response()</em> or <em>daily_response()</em>. With
+<code>pcor_control = TRUE</code>, its partial correlations, controlling
+for <code>env_data_primary</code>, are calculated as well, so that both
+variables are described in the same way.</p>
+</div>
+<div id="data-and-main-arguments" class="section level1">
+<h1>2 Data and main arguments</h1>
+<p>The response is a data frame with one column and years as row names.
+Climate data can be given in wide format, with years as row names and 12
+months or 366 days as columns, or in tidy format, with the columns Year,
+Month (or DOY) and the climate variable. The two climate variables are
+aggregated separately, typically by means for temperature and by sums
+for precipitation.</p>
+<table>
+<colgroup>
+<col width="50%" />
+<col width="50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Argument</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>env_data_primary</code>, <code>env_data_control</code></td>
+<td>climate data; partial correlations are calculated for the primary
+variable</td>
+</tr>
+<tr class="even">
+<td><code>tidy_env_data_primary</code>,
+<code>tidy_env_data_control</code></td>
+<td><code>TRUE</code> for climate data in tidy format</td>
+</tr>
+<tr class="odd">
+<td><code>aggregate_function_env_data_primary</code>,
+<code>aggregate_function_env_data_control</code></td>
+<td><code>&quot;mean&quot;</code>, <code>&quot;median&quot;</code>, <code>&quot;sum&quot;</code>,
+<code>&quot;quantile&quot;</code> or <code>&quot;SPEI&quot;</code>, and for daily data also
+<code>&quot;min&quot;</code> and <code>&quot;max&quot;</code></td>
+</tr>
+<tr class="even">
+<td><code>fixed_width</code>, or <code>lower_limit</code> and
+<code>upper_limit</code></td>
+<td>window widths in months or days</td>
+</tr>
+<tr class="odd">
+<td><code>previous_year</code>, <code>number_previous_years</code>,
+<code>month_interval</code> or <code>day_interval</code></td>
+<td>windows that extend into previous years</td>
+</tr>
+<tr class="even">
+<td><code>pcor_method</code>, <code>pcor_na_use</code></td>
+<td>Pearson, Spearman or Kendall partial correlations, and the treatment
+of missing values</td>
+</tr>
+<tr class="odd">
+<td><code>remove_insignificant</code>,
+<code>remove_insignificant_method</code>, <code>alpha</code></td>
+<td>significance filter</td>
+</tr>
+<tr class="even">
+<td><code>boot</code>, <code>boot_n</code>,
+<code>boot_ci_type</code></td>
+<td>bootstrap confidence intervals</td>
+</tr>
+<tr class="odd">
+<td><code>pcor_control</code></td>
+<td>partial correlations for the control variable as well</td>
+</tr>
+<tr class="even">
+<td><code>dc_method</code> and the other <code>dc_*</code>
+arguments</td>
+<td>climate detrending</td>
+</tr>
+<tr class="odd">
+<td><code>skip_window_length</code>,
+<code>skip_window_position</code></td>
+<td>faster daily analyses, by skipping window widths and positions</td>
+</tr>
+</tbody>
+</table>
+<p>The results are summarised by <code>summary()</code>.
+<code>plot(x, type = 1)</code> shows the window width with the strongest
+partial correlation, <code>plot(x, type = 2)</code> the heatmap of all
+partial correlations and, with <code>pcor_control = TRUE</code>,
+<code>plot(x, type = 3)</code> the heatmap of the partial correlations
+of the control variable. The aggregated climate of the optimal window is
+in <code>$optimized_return</code>, and
+<code>$variance_partitioning</code> describes how the two variables
+share the explained variance in that window (section 3.2).</p>
+</div>
+<div id="monthly-data" class="section level1">
+<h1>3 Monthly data</h1>
+<div id="temperature-controlling-for-precipitation" class="section level2">
+<h2>3.1 Temperature, controlling for precipitation</h2>
+<p>The mean vessel area chronology (<em>data_MVA</em>) is related to the
+monthly mean temperatures of Ljubljana, controlling for the monthly
+precipitation sums. The temperatures are in wide format and the
+precipitation in tidy format.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(dendroTools)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">data</span>(data_MVA)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">data</span>(LJ_monthly_temperatures)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="fu">data</span>(LJ_monthly_precipitation)</span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a>monthly_pcor <span class="ot">&lt;-</span> <span class="fu">monthly_response_seascorr</span>(</span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a>  <span class="at">response =</span> data_MVA,</span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a>  <span class="at">env_data_primary =</span> LJ_monthly_temperatures,</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a>  <span class="at">env_data_control =</span> LJ_monthly_precipitation,</span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a>  <span class="at">tidy_env_data_primary =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a>  <span class="at">tidy_env_data_control =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a>  <span class="at">aggregate_function_env_data_primary =</span> <span class="st">&quot;mean&quot;</span>,</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a>  <span class="at">aggregate_function_env_data_control =</span> <span class="st">&quot;sum&quot;</span>,</span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a>  <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a>  <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a></span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="fu">summary</span>(monthly_pcor)</span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="co">#&gt;                      Variable                                           Value</span></span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="co">#&gt; 1                    approach                                         monthly</span></span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="co">#&gt; 2                      method       Partial Correlation Coefficient (pearson)</span></span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a><span class="co">#&gt; 3                      metric                 Partial Correlation Coefficient</span></span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a><span class="co">#&gt; 4              analysed_years                                     1940 - 2012</span></span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a><span class="co">#&gt; 5   maximal_calculated_metric                                           0.681</span></span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a><span class="co">#&gt; 6                    lower_ci                                            &lt;NA&gt;</span></span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a><span class="co">#&gt; 7                    upper_ci                                            &lt;NA&gt;</span></span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a><span class="co">#&gt; 8            reference_window Starting Month of Optimal Window Width: Month 3</span></span>
+<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a><span class="co">#&gt; 9      analysed_previous_year                                           FALSE</span></span>
+<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a><span class="co">#&gt; 10      number_previous_years                                               0</span></span>
+<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a><span class="co">#&gt; 11     optimal_reference_year                                               Y</span></span>
+<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a><span class="co">#&gt; 12        optimal_time_window                                       Mar - Nov</span></span>
+<span id="cb1-32"><a href="#cb1-32" tabindex="-1"></a><span class="co">#&gt; 13 optimal_time_window_length                                               9</span></span></code></pre></div>
+</div>
+<div id="both-variables" class="section level2">
+<h2>3.2 Both variables</h2>
+<p>With <code>pcor_control = TRUE</code>, the function also calculates,
+for every window, the partial correlation of MVA with precipitation,
+controlling for temperature. These are exactly the partial correlations
+that a second run with the two variables, and their settings, swapped
+would return. The partial correlations of temperature do not change.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>monthly_both <span class="ot">&lt;-</span> <span class="fu">monthly_response_seascorr</span>(</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>  <span class="at">response =</span> data_MVA,</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>  <span class="at">env_data_primary =</span> LJ_monthly_temperatures,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>  <span class="at">env_data_control =</span> LJ_monthly_precipitation,</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a>  <span class="at">tidy_env_data_primary =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>  <span class="at">tidy_env_data_control =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>  <span class="at">aggregate_function_env_data_control =</span> <span class="st">&quot;sum&quot;</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>  <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>  <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>  <span class="at">pcor_control =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a><span class="co"># the main rows of summary()</span></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a>key_results <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">summary</span>(x)</span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a>  s[s<span class="sc">$</span>Variable <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">&quot;maximal_calculated_metric&quot;</span>,</span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a>                      <span class="st">&quot;optimal_time_window&quot;</span>,</span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a>                      <span class="st">&quot;maximal_calculated_metric_control&quot;</span>,</span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a>                      <span class="st">&quot;optimal_time_window_control&quot;</span>,</span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a>                      <span class="st">&quot;control_metric_in_optimal_time_window&quot;</span>), ]</span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a>}</span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" tabindex="-1"></a><span class="fu">key_results</span>(monthly_both)</span>
+<span id="cb2-23"><a href="#cb2-23" tabindex="-1"></a><span class="co">#&gt;                                 Variable     Value</span></span>
+<span id="cb2-24"><a href="#cb2-24" tabindex="-1"></a><span class="co">#&gt; 5              maximal_calculated_metric     0.681</span></span>
+<span id="cb2-25"><a href="#cb2-25" tabindex="-1"></a><span class="co">#&gt; 12                   optimal_time_window Mar - Nov</span></span>
+<span id="cb2-26"><a href="#cb2-26" tabindex="-1"></a><span class="co">#&gt; 14     maximal_calculated_metric_control     0.453</span></span>
+<span id="cb2-27"><a href="#cb2-27" tabindex="-1"></a><span class="co">#&gt; 17           optimal_time_window_control Jul - Sep</span></span>
+<span id="cb2-28"><a href="#cb2-28" tabindex="-1"></a><span class="co">#&gt; 19 control_metric_in_optimal_time_window     0.168</span></span></code></pre></div>
+<p>summary() now also gives the strongest partial correlation of the
+control variable and its window, and the partial correlation of the
+control variable in the optimal window of the primary variable. Figure 1
+shows both surfaces.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co"># the heatmaps of the primary (type = 2) and the control variable (type = 3)</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>smaller_legend <span class="ot">&lt;-</span> <span class="fu">theme</span>(<span class="at">legend.title =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">14</span>),</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>                        <span class="at">legend.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>))</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a>grid<span class="sc">::</span><span class="fu">grid.newpage</span>()</span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>grid<span class="sc">::</span><span class="fu">pushViewport</span>(grid<span class="sc">::</span><span class="fu">viewport</span>(<span class="at">layout =</span> grid<span class="sc">::</span><span class="fu">grid.layout</span>(<span class="dv">1</span>, <span class="dv">2</span>)))</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">plot</span>(monthly_both, <span class="at">type =</span> <span class="dv">2</span>) <span class="sc">+</span> smaller_legend <span class="sc">+</span></span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a>        <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;a) Temperature, controlling for precipitation&quot;</span>),</span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>      <span class="at">vp =</span> grid<span class="sc">::</span><span class="fu">viewport</span>(<span class="at">layout.pos.row =</span> <span class="dv">1</span>, <span class="at">layout.pos.col =</span> <span class="dv">1</span>))</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a><span class="fu">print</span>(<span class="fu">plot</span>(monthly_both, <span class="at">type =</span> <span class="dv">3</span>) <span class="sc">+</span> smaller_legend <span class="sc">+</span></span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>        <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;b) Precipitation, controlling for temperature&quot;</span>),</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>      <span class="at">vp =</span> grid<span class="sc">::</span><span class="fu">viewport</span>(<span class="at">layout.pos.row =</span> <span class="dv">1</span>, <span class="at">layout.pos.col =</span> <span class="dv">2</span>))</span></code></pre></div>
+<div class="figure" style="text-align: center">
+<img role="img" aria-label="Figure 1: Partial correlations between MVA and (a) monthly temperature, controlling for precipitation, and (b) monthly precipitation, controlling for temperature. Each panel has its own colour scale." src="data:image/png;base64,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" alt="Figure 1: Partial correlations between MVA and (a) monthly temperature, controlling for precipitation, and (b) monthly precipitation, controlling for temperature. Each panel has its own colour scale." />
+<p class="caption">
+Figure 1: Partial correlations between MVA and (a) monthly temperature,
+controlling for precipitation, and (b) monthly precipitation,
+controlling for temperature. Each panel has its own colour scale.
+</p>
+</div>
+<p>The two partial correlations do not divide the climate signal into a
+temperature part and a precipitation part: the variance of MVA that
+temperature and precipitation share, because the two variables are
+correlated, belongs to neither. <code>$variance_partitioning</code>
+describes this split for the optimal window. It gives the three simple
+correlations, both partial correlations, the variance of MVA explained
+by both variables together (r_squared), the parts unique to the primary
+and the control variable, and the shared part, which is negative when
+one variable suppresses the other.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a>monthly_both<span class="sc">$</span>variance_partitioning</span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="co">#&gt;             Variable       Value</span></span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="co">#&gt; 1 r_response_primary  0.66999619</span></span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a><span class="co">#&gt; 2 r_response_control  0.01714315</span></span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a><span class="co">#&gt; 3  r_primary_control -0.15856253</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a><span class="co">#&gt; 4       pcor_primary  0.68143419</span></span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a><span class="co">#&gt; 5       pcor_control  0.16832743</span></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a><span class="co">#&gt; 6          r_squared  0.46450997</span></span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a><span class="co">#&gt; 7     unique_primary  0.46421609</span></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a><span class="co">#&gt; 8     unique_control  0.01561508</span></span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a><span class="co">#&gt; 9             shared -0.01532119</span></span></code></pre></div>
+<p>In the optimal window, almost all of the explained variance is unique
+to temperature. Note that this window, from March to November, is long,
+because MVA and the temperatures share a positive trend; section 5 shows
+how detrending changes this.</p>
+</div>
+<div id="significance" class="section level2">
+<h2>3.3 Significance</h2>
+<p>The significance filter is applied to both surfaces with the same
+method and settings. Methods that correct for multiple testing
+(<code>&quot;fdr_BY&quot;</code>, <code>&quot;fdr_BH&quot;</code>, <code>&quot;sidak&quot;</code>,
+<code>&quot;maxstat&quot;</code> and <code>&quot;cluster&quot;</code>) correct within each
+surface, as a separate run with the two variables swapped would, and the
+permutation methods use the same permutations for both surfaces. The
+filters are described in <code>$significance_filter</code> and
+<code>$significance_filter_control</code>.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>monthly_fdr <span class="ot">&lt;-</span> <span class="fu">monthly_response_seascorr</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  <span class="at">response =</span> data_MVA,</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="at">env_data_primary =</span> LJ_monthly_temperatures,</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  <span class="at">env_data_control =</span> LJ_monthly_precipitation,</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  <span class="at">tidy_env_data_primary =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  <span class="at">tidy_env_data_control =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  <span class="at">aggregate_function_env_data_control =</span> <span class="st">&quot;sum&quot;</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>  <span class="at">remove_insignificant =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" tabindex="-1"></a>  <span class="at">remove_insignificant_method =</span> <span class="st">&quot;fdr_BH&quot;</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" tabindex="-1"></a>  <span class="at">pcor_control =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" tabindex="-1"></a>monthly_fdr<span class="sc">$</span>significance_filter<span class="sc">$</span>criterion</span>
+<span id="cb5-14"><a href="#cb5-14" tabindex="-1"></a><span class="co">#&gt; [1] &quot;Adjusted p &lt; 0.05 (BH)&quot;</span></span>
+<span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co"># windows retained by the filter, out of all windows</span></span>
+<span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="fu">c</span>(<span class="at">primary =</span> monthly_fdr<span class="sc">$</span>significance_filter<span class="sc">$</span>retained_cells,</span>
+<span id="cb5-18"><a href="#cb5-18" tabindex="-1"></a>  <span class="at">control =</span> monthly_fdr<span class="sc">$</span>significance_filter_control<span class="sc">$</span>retained_cells,</span>
+<span id="cb5-19"><a href="#cb5-19" tabindex="-1"></a>  <span class="at">windows =</span> <span class="fu">sum</span>(<span class="sc">!</span><span class="fu">is.na</span>(monthly_both<span class="sc">$</span>calculations)))</span>
+<span id="cb5-20"><a href="#cb5-20" tabindex="-1"></a><span class="co">#&gt; primary control windows </span></span>
+<span id="cb5-21"><a href="#cb5-21" tabindex="-1"></a><span class="co">#&gt;      75       4      78</span></span></code></pre></div>
+</div>
+</div>
+<div id="daily-data" class="section level1">
+<h1>4 Daily data</h1>
+<p><em>daily_response_seascorr()</em> works in the same way with daily
+data. Here every window is 45 days wide (<code>fixed_width = 45</code>),
+which keeps the example fast. Windows of different widths are evaluated
+with <code>lower_limit</code> and <code>upper_limit</code>, and
+<code>skip_window_length</code> and <code>skip_window_position</code>
+then reduce the computing time by evaluating only every n-th window
+width or position.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">data</span>(LJ_daily_temperatures)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">data</span>(LJ_daily_precipitation)</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>daily_both <span class="ot">&lt;-</span> <span class="fu">daily_response_seascorr</span>(</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">response =</span> data_MVA,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="at">env_data_primary =</span> LJ_daily_temperatures,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="at">env_data_control =</span> LJ_daily_precipitation,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="at">tidy_env_data_primary =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="at">tidy_env_data_control =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="at">aggregate_function_env_data_control =</span> <span class="st">&quot;sum&quot;</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  <span class="at">fixed_width =</span> <span class="dv">45</span>,</span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>  <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a>  <span class="at">pcor_control =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="fu">key_results</span>(daily_both)</span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt;                                 Variable           Value</span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt; 5              maximal_calculated_metric           0.733</span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt; 12                   optimal_time_window Mar 22 - May 05</span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt; 14     maximal_calculated_metric_control           0.486</span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt; 17           optimal_time_window_control Aug 08 - Sep 21</span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt; 19 control_metric_in_optimal_time_window           0.066</span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a>daily_both<span class="sc">$</span>variance_partitioning</span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt;             Variable        Value</span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt; 1 r_response_primary  0.744401639</span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt; 2 r_response_control -0.204577138</span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt; 3  r_primary_control -0.330904454</span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt; 4       pcor_primary  0.732598920</span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt; 5       pcor_control  0.066255657</span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt; 6          r_squared  0.556091069</span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt; 7     unique_primary  0.514239264</span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt; 8     unique_control  0.001957269</span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt; 9             shared  0.039894536</span></span></code></pre></div>
+<p>With one window width, both sets of partial correlations can be shown
+as lines through the year (Figure 2). The dashed lines give the partial
+correlation that is significant at p = 0.05 for a single window; one
+degree of freedom is spent on the controlled variable.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a>n_years <span class="ot">&lt;-</span> <span class="fu">nrow</span>(daily_both<span class="sc">$</span>optimized_return)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>t_critical <span class="ot">&lt;-</span> stats<span class="sc">::</span><span class="fu">qt</span>(<span class="fl">0.975</span>, <span class="at">df =</span> n_years <span class="sc">-</span> <span class="dv">3</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>r_critical <span class="ot">&lt;-</span> t_critical <span class="sc">/</span> <span class="fu">sqrt</span>(n_years <span class="sc">-</span> <span class="dv">3</span> <span class="sc">+</span> t_critical <span class="sc">^</span> <span class="dv">2</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>n_windows <span class="ot">&lt;-</span> <span class="fu">ncol</span>(daily_both<span class="sc">$</span>calculations)</span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>labels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;temperature, controlling for precipitation&quot;</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>            <span class="st">&quot;precipitation, controlling for temperature&quot;</span>)</span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a></span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>daily_lines <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>  <span class="at">start =</span> <span class="fu">rep</span>(<span class="fu">seq_len</span>(n_windows), <span class="dv">2</span>),</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>  <span class="at">partial_r =</span> <span class="fu">c</span>(daily_both<span class="sc">$</span>calculations[<span class="dv">1</span>, ],</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>                daily_both<span class="sc">$</span>calculations_control[<span class="dv">1</span>, ]),</span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>  <span class="at">variable =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(labels, <span class="at">each =</span> n_windows), <span class="at">levels =</span> labels)</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a>)</span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="fu">ggplot</span>(daily_lines, <span class="fu">aes</span>(<span class="at">x =</span> start, <span class="at">y =</span> partial_r, <span class="at">colour =</span> variable)) <span class="sc">+</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">colour =</span> <span class="st">&quot;grey60&quot;</span>) <span class="sc">+</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="fu">c</span>(<span class="sc">-</span>r_critical, r_critical), <span class="at">colour =</span> <span class="st">&quot;grey60&quot;</span>,</span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a>             <span class="at">linetype =</span> <span class="st">&quot;dashed&quot;</span>) <span class="sc">+</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="sc">+</span></span>
+<span id="cb7-21"><a href="#cb7-21" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">&quot;#2a78d6&quot;</span>, <span class="st">&quot;#eb6834&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb7-22"><a href="#cb7-22" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;First day of the window (day of year)&quot;</span>,</span>
+<span id="cb7-23"><a href="#cb7-23" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">&quot;Partial correlation&quot;</span>, <span class="at">colour =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb7-24"><a href="#cb7-24" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb7-25"><a href="#cb7-25" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span>, <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>())</span></code></pre></div>
+<div class="figure" style="text-align: center">
+<img role="img" aria-label="Figure 2: Partial correlations between MVA and 45-day windows of temperature, controlling for precipitation, and of precipitation, controlling for temperature. The dashed lines show the critical partial correlation at p = 0.05." src="data:image/png;base64,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" alt="Figure 2: Partial correlations between MVA and 45-day windows of temperature, controlling for precipitation, and of precipitation, controlling for temperature. The dashed lines show the critical partial correlation at p = 0.05." />
+<p class="caption">
+Figure 2: Partial correlations between MVA and 45-day windows of
+temperature, controlling for precipitation, and of precipitation,
+controlling for temperature. The dashed lines show the critical partial
+correlation at p = 0.05.
+</p>
+</div>
+<p>The strongest relationship of MVA is with spring temperature, from
+late March to early May. In this window, precipitation has almost no
+partial correlation, and nearly all of the explained variance is unique
+to temperature. Precipitation has its own, positive partial correlation
+with MVA in late summer. The partial correlations with temperature are
+positive in almost every window, partly because MVA and the temperatures
+share a trend (section 5).</p>
+</div>
+<div id="climate-detrending" class="section level1">
+<h1>5 Climate detrending</h1>
+<p>The aggregated climate of every window can be detrended before the
+partial correlations are calculated (see the vignette
+<em>Detrending_climate_data</em>). By default, both variables are
+detrended with the same settings. <code>dc_env_data_control</code>
+changes any of them for the control variable, for example ratios for
+precipitation sums while temperature, which can be negative, is
+detrended by differences.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>monthly_detrended <span class="ot">&lt;-</span> <span class="fu">monthly_response_seascorr</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a>  <span class="at">response =</span> data_MVA,</span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>  <span class="at">env_data_primary =</span> LJ_monthly_temperatures,</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>  <span class="at">env_data_control =</span> LJ_monthly_precipitation,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>  <span class="at">tidy_env_data_primary =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a>  <span class="at">tidy_env_data_control =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>  <span class="at">aggregate_function_env_data_control =</span> <span class="st">&quot;sum&quot;</span>,</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>  <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>  <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>  <span class="at">dc_method =</span> <span class="st">&quot;Spline&quot;</span>,</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>  <span class="at">dc_difference =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>  <span class="at">dc_env_data_control =</span> <span class="fu">list</span>(<span class="at">dc_difference =</span> <span class="cn">FALSE</span>),</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>  <span class="at">pcor_control =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="fu">key_results</span>(monthly_detrended)</span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a><span class="co">#&gt;                                 Variable     Value</span></span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a><span class="co">#&gt; 5              maximal_calculated_metric     0.352</span></span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a><span class="co">#&gt; 12                   optimal_time_window       Apr</span></span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a><span class="co">#&gt; 14     maximal_calculated_metric_control     0.242</span></span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a><span class="co">#&gt; 17           optimal_time_window_control Jul - Sep</span></span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a><span class="co">#&gt; 19 control_metric_in_optimal_time_window    -0.006</span></span></code></pre></div>
+<p>After detrending, the optimal temperature window is short and lies in
+spring, as in the daily analysis, instead of covering March to
+November.</p>
+</div>
+<div id="notes-on-interpretation" class="section level1">
+<h1>6 Notes on interpretation</h1>
+<ul>
+<li>A partial correlation describes the relationship that remains after
+the linear effect of the other variable is removed. When the two
+variables are strongly correlated in a window, both partial correlations
+can be small even though together they explain much of the response;
+<code>$variance_partitioning</code> shows how large the shared part
+is.</li>
+<li><code>pcor_control = TRUE</code> gives the same partial
+correlations, intervals and significance filter as a separate run with
+the two variables, and their settings, swapped.</li>
+<li>The variance split is defined for Pearson correlations. With
+<code>pcor_method = &quot;spearman&quot;</code>, it refers to ranks, and with
+<code>&quot;kendall&quot;</code> it is not given.</li>
+<li>Bootstrap confidence intervals of type <code>&quot;bca&quot;</code> need at
+least as many bootstrap replicates (<code>boot_n</code>) as analysed
+years.</li>
+</ul>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+<p>Jevšenak, J., 2020. New features in the dendroTools R package:
+Bootstrapped and partial correlation coefficients for monthly and daily
+climate data. Dendrochronologia 63, 125753. <a href="https://doi.org/10.1016/j.dendro.2020.125753" class="uri">https://doi.org/10.1016/j.dendro.2020.125753</a></p>
+<p>Meko, D.M., Touchan, R., Anchukaitis, K.J., 2011. Seascorr: A MATLAB
+program for identifying the seasonal climate signal in an annual
+tree-ring time series. Computers &amp; Geosciences 37, 1234–1241. <a href="https://doi.org/10.1016/j.cageo.2011.01.013" class="uri">https://doi.org/10.1016/j.cageo.2011.01.013</a></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>

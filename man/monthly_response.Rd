@@ -18,6 +18,9 @@ monthly_response(
   fixed_width = 0,
   brnn_smooth = TRUE,
   remove_insignificant = TRUE,
+  remove_insignificant_method = "alpha",
+  perm_n = 999,
+  cluster_threshold = "nominal",
   alpha = 0.05,
   row_names_subset = FALSE,
   reference_window = "start",
@@ -37,6 +40,12 @@ monthly_response(
   boot_conf_int = 0.95,
   month_interval = NULL,
   dc_method = NULL,
+  dc_nyrs = NULL,
+  dc_f = 0.5,
+  dc_difference = FALSE,
+  dc_span = "cv",
+  dc_bass = 0,
+  dc_scale = NULL,
   cor_na_use = "everything"
 )
 }
@@ -52,7 +61,9 @@ those from a response data frame. If not, set row_names_subset = TRUE.
 Alternatively, env_data could be a tidy data with three columns,
 i.e. Year, DOY (Month) and third column representing values of mean temperatures,
 sum of precipitation etc. If tidy data is passed to the function, set the argument
-tidy_env_data to TRUE.}
+tidy_env_data to TRUE. For aggregate_function = 'SPEI', env_data holds the
+monthly climatic water balance (precipitation minus potential
+evapotranspiration), for example from water_balance().}
 
 \item{method}{a character string specifying which method to use. Current
 possibilities are "cor" (default), "lm" and "brnn".}
@@ -95,6 +106,73 @@ the significant threshold level, based on a selected alpha. For "lm" and
 "brnn" method, squared threshold is used, which corresponds to R squared
 statistics.}
 
+\item{remove_insignificant_method}{the criterion used when
+remove_insignificant = TRUE. One of "alpha" (per-window significance
+threshold; the default), "boot" (bootstrap confidence interval excludes
+zero; requires boot = TRUE), "fdr_BY" (false discovery rate,
+Benjamini-Yekutieli, valid under arbitrary dependence between windows),
+"fdr_BH" (Benjamini-Hochberg, valid under positive dependence and less
+conservative), "maxstat" (max-statistic permutation test), "sidak"
+(Sidak correction on the effective number of tests) or "cluster"
+(cluster-extent inference). The "alpha" and "boot" criteria are applied per
+window and therefore do not account for the number of windows screened; the
+remaining criteria do.
+
+"maxstat" builds a null distribution of the largest absolute correlation
+obtained anywhere in the search by repeatedly shuffling the response, and
+retains only windows exceeding the resulting threshold. It makes no
+distributional assumptions but requires perm_n re-evaluations of the whole
+search. It is available for method = "cor" and for method = "lm" with a
+single predictor, but not for method = "brnn".
+
+"sidak" targets the same family-wise error rate as "maxstat" but estimates
+it analytically. The effective number of independent tests among the
+screened windows is obtained from the eigenvalues of their correlation
+matrix following Li and Ji (2005), and a Sidak correction is applied to
+that number rather than to the nominal count of windows. No permutations
+are required, so it is effectively instantaneous and is available for all
+methods including "brnn".
+Years that are missing in some of the windows, such as the first years
+removed by dc_method = "Ar", are left out of this estimate, rather than
+the windows themselves.
+
+"sidak" is an approximation to "maxstat". Across 54 combinations of site
+and climate variable the two thresholds agreed to within 0.016 on average,
+with a maximum discrepancy of 0.038. The approximation is close to exact
+for strongly autocorrelated variables such as temperature, and tends to be
+slightly permissive for weakly autocorrelated variables such as daily
+precipitation, because the eigenvalue approach does not represent temporal
+autocorrelation. "maxstat" is therefore preferable for final results,
+while "sidak" is well suited to exploratory work and to method = "brnn".
+
+"cluster" is cluster-extent inference, adapted from neuroimaging. The
+surface is thresholded at cluster_threshold, connected regions of
+supra-threshold windows are identified, and each region's mass, the sum of
+absolute correlations inside it, is compared against the largest mass
+arising in permuted surfaces. It controls the family-wise error rate over
+CLUSTERS rather than over windows, so it establishes that a region contains
+signal without identifying which windows within it carry that signal.
+
+In tree-ring response surfaces this method has little discriminating power.
+A real climate signal forms one large connected region whose mass greatly
+exceeds anything the permuted surfaces produce, so every cluster that forms
+is retained and the permutation step rarely rejects. The number of windows
+kept is then determined by cluster_threshold rather than by the data. It is
+provided for completeness and comparison; "maxstat" or "sidak" are
+preferable when the question is which windows carry signal. It is available
+only for method = "cor".}
+
+\item{perm_n}{number of permutations used when
+remove_insignificant_method = "maxstat". Defaults to 999. Ignored by all
+other criteria.}
+
+\item{cluster_threshold}{the absolute correlation at which clusters are
+formed when remove_insignificant_method = "cluster". Either "nominal", the
+default, which uses the critical correlation at the chosen alpha, or a
+single number between 0 and 1. This is a free parameter and it largely
+determines how many windows are retained, so the value used is reported in
+$significance_filter. Ignored by all other criteria.}
+
 \item{alpha}{significance level used to remove insignificant calculations.}
 
 \item{row_names_subset}{if set to TRUE, row.names are used to subset
@@ -109,8 +187,25 @@ reference_window argument is set to 'end', then each calculation is related
 to the ending day of window calculation.}
 
 \item{aggregate_function}{character string specifying how the monthly data should be
-aggregated. The default is 'mean', the other options are 'median', 'sum'
-and 'quantile'.}
+aggregated. The default is 'mean', the other options are 'median', 'sum',
+'quantile' and 'SPEI'.
+Missing months are skipped, so 'sum' adds only the months that are
+available; a window without any value is NA.
+'SPEI' calculates the Standardized Precipitation-Evapotranspiration Index
+(Vicente-Serrano et al. 2010) of each window. env_data must then hold the
+monthly climatic water balance, i.e. precipitation minus potential
+evapotranspiration (P - PET), which can be calculated with
+water_balance(). The water balance is summed over the window and
+standardised with a log-logistic distribution fitted by unbiased
+probability weighted moments, the default of SPEI::spei(). Each window is
+standardised against all years of env_data, before they are matched with
+the response. A window of K months ending in month m therefore has the
+value of SPEI::spei(scale = K) in month m, the SPEI of a year does not
+depend on the analysed years, and a window in a previous year is
+standardised as the same window in the current year. Unlike the other
+options, 'SPEI' does not skip missing months: a window that includes a
+missing month is NA in that year. SPEI values can only be detrended by
+differences (dc_difference = TRUE).}
 
 \item{quantile_prob}{numeric value between 0 and 1 specifying the quantile
 probability used when aggregate_function = 'quantile'. For example,
@@ -145,14 +240,19 @@ the form of: ylimits = c(0,1)}
 \item{tidy_env_data}{if set to TRUE, env_data should be inserted as a data frame with three
 columns: "Year", "Month", "Precipitation/Temperature/etc."}
 
-\item{boot}{logical, if TRUE, bootstrap procedure will be used to calculate
-estimates correlation coefficients, R squared or adjusted R squared metrices}
+\item{boot}{logical, if TRUE, bootstrap confidence intervals are calculated
+for the correlation coefficients, R squared or adjusted R squared metrics and
+returned as $boot_lower and $boot_upper. The metrics themselves are those of
+the observed data, as with boot = FALSE. Versions before 2.0.0 reported the
+mean of the bootstrap replicates instead.}
 
 \item{boot_n}{The number of bootstrap replicates}
 
-\item{boot_ci_type}{A character string representing the type of bootstrap intervals
-required. The value should be any subset of the values c("norm","basic", "stud",
-"perc", "bca").}
+\item{boot_ci_type}{A character string representing the type of bootstrap
+intervals: "norm" (default), "basic", "perc" or "bca". "bca" needs boot_n of
+at least the number of analysed years. With fewer replicates
+boot::boot.ci() cannot estimate bca intervals, so they are all NA, and a
+warning is given. Studentized intervals ("stud") are not available.}
 
 \item{boot_conf_int}{A scalar or vector containing the confidence level(s) of
 the required interval(s)}
@@ -168,9 +268,56 @@ example, previous_year = TRUE, number_previous_years = 2 and
 month_interval = c(-1, 12) analyses the full sequence from January of year
 t - 2 to December of year t.}
 
-\item{dc_method}{a character string to determine the method to detrend climate
-data.  Possible values are "none" (default) and "SLD" which refers to Simple
-Linear Detrending}
+\item{dc_method}{a character string specifying how the aggregated climate
+series of each moving window should be detrended before the climate-growth
+relationship is calculated. Detrending is applied to the aggregated series,
+i.e. to a vector with one value per year, and not to the raw monthly data.
+Possible values are "none" (or NULL, the default, no detrending), "SLD"
+(Simple Linear Detrending, the historical dendroTools option), and the
+smoothers "Spline", "Mean", "Ar" and "Friedman", which follow
+dplR::detrend(). The smoothers are fitted in chronological order of the
+years given by the row names. "Ar" (prewhitening) leaves missing values at
+the start of each detrended window, so for method = "cor" cor_na_use is
+changed to "pairwise.complete.obs", with a warning, unless it already
+excludes missing values.
+The growth-specific options of dplR::detrend() ("ModNegExp",
+"ModHugershoff", "AgeDepSpline") are not available, because they assume
+strictly positive series with a biological growth trend.}
+
+\item{dc_nyrs}{a number giving the rigidity of the smoothing spline when
+dc_method = "Spline". Defaults to NULL, i.e. 0.67 times the length of the
+series, exactly as in dplR::detrend(). Ignored by the other methods.}
+
+\item{dc_f}{a number between 0 and 1 giving the frequency response at the
+wavelength given by dc_nyrs when dc_method = "Spline". Defaults to 0.5.
+Ignored by the other methods.}
+
+\item{dc_difference}{logical. If FALSE (default, as in dplR::detrend()),
+the detrended series is calculated as a ratio between the observed series
+and the fitted curve. If TRUE, it is calculated as a difference. Ratio
+detrending is only defined for strictly positive data, such as precipitation
+sums, so the function stops if env_data contains negative values. Windows
+whose aggregated series still contains a zero, for example a completely dry
+month, are returned as NA. For temperature and for any other variable that
+can be negative, use dc_difference = TRUE. Ignored when dc_method = "SLD",
+which is always residual based.}
+
+\item{dc_span}{the span used by the Friedman super smoother when
+dc_method = "Friedman". Either "cv" (default, cross-validation) or a
+number between 0 and 1. See also stats::supsmu(). Ignored by the other
+methods.}
+
+\item{dc_bass}{a number between 0 and 10 controlling the smoothness of the
+Friedman super smoother when dc_method = "Friedman". Defaults to 0. See also
+stats::supsmu(). Ignored by the other methods.}
+
+\item{dc_scale}{logical or NULL. If TRUE, the detrended series is divided by
+the standard deviation of its own values. The default (NULL) uses the
+convention of the selected method: TRUE for dc_method = "SLD", which
+preserves the behaviour of earlier dendroTools versions, and FALSE for the
+dplR methods, which are not rescaled in dplR::detrend(). Rescaling does not
+affect correlations, but it does affect the scale of $optimized_return and
+of the transfer function.}
 
 \item{cor_na_use}{an optional character string giving a method for computing
 covariances in the presence of missing values for correlation coefficients.
@@ -179,7 +326,7 @@ This must be (an abbreviation of) one of the strings "everything" (default),
 also the documentation for the base cor() function.}
 }
 \value{
-a list with 19 elements:
+a list with 20 elements:
 \enumerate{
  \item $calculations - a matrix with calculated metrics
  \item $method - the character string of a method
@@ -196,9 +343,13 @@ a list with 19 elements:
  \item $reference_window - character string, which reference window was used for calculations
  \item $boot_lower - matrix with lower limit of confidence intervals of bootstrap calculations
  \item $boot_upper - matrix with upper limit of confidence intervals of bootstrap calculations
+ \item $significance_filter - list describing which significance filter was
+ applied, the criterion used, and how many matrix cells were retained or removed
  \item $aggregated_climate - matrix with all aggregated climate series
  \item $previous_year - logical indicating whether previous-year climate data were used
  \item $number_previous_years - integer indicating how many previous years were used
+ \item $detrending - information about the climate detrending applied,
+ i.e. the method and the settings that were used, or "none"
 }
 }
 \description{
@@ -323,5 +474,53 @@ example_two_previous_years <- monthly_response(
   aggregate_function = "mean"
 )
 
+# Example with climate detrending, following dplR::detrend().
+# LJ_monthly_temperatures are temperatures in degrees Celsius and therefore
+# cross zero, so differences must be used instead of the default ratios.
+example_detrended <- monthly_response(response = data_MVA,
+  env_data = LJ_monthly_temperatures,
+  method = "cor", row_names_subset = TRUE,
+  remove_insignificant = FALSE,
+  dc_method = "Spline", dc_difference = TRUE)
+
+# example_detrended$detrending
+
+# Precipitation sums are positive, so the default ratios can be used
+example_detrended_ratio <- monthly_response(response = data_MVA,
+  env_data = LJ_monthly_precipitation, tidy_env_data = TRUE,
+  method = "cor", row_names_subset = TRUE,
+  aggregate_function = "sum", remove_insignificant = FALSE,
+  dc_method = "Friedman")
+
+# Example with SPEI for the black pine site Sezana. The residual
+# chronology is built as in Izmir et al. (2024).
+SEZ_chron <- dplR::chron(dplR::detrend(SEZ_rwl, method = "Spline",
+                                       nyrs = 32, f = 0.5),
+                         prewhiten = TRUE)
+SEZ_res <- SEZ_chron[!is.na(SEZ_chron$res), "res", drop = FALSE]
+
+monthly_wb <- water_balance(
+  prec = data_transform(SEZ_daily_psum, format = "monthly",
+                        monthly_aggregate_function = "sum"),
+  tmin = data_transform(SEZ_daily_tmin, format = "monthly",
+                        monthly_aggregate_function = "mean"),
+  tmax = data_transform(SEZ_daily_tmax, format = "monthly",
+                        monthly_aggregate_function = "mean"),
+  lat = 45.71)
+
+example_spei <- monthly_response(response = SEZ_res,
+  env_data = monthly_wb, method = "cor", row_names_subset = TRUE,
+  previous_year = TRUE, aggregate_function = "SPEI",
+  remove_insignificant = FALSE)
+
+# summary(example_spei)
+# plot(example_spei, type = 2)
+
 }
+}
+\references{
+Vicente-Serrano, S.M., Begueria, S., Lopez-Moreno, J.I. (2010) A
+multiscalar drought index sensitive to global warming: the Standardized
+Precipitation Evapotranspiration Index. Journal of Climate, 23, 1696-1718.
+\doi{10.1175/2009JCLI2909.1}
 }

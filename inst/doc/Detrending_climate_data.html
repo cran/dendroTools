@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<meta name="author" content="Jernej Jevšenak" />
+
+<meta name="date" content="2026-11-23" />
+
+<title>Detrending climate data</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Detrending climate data</h1>
+<h4 class="author">Jernej Jevšenak</h4>
+<h4 class="date">2026-11-23</h4>
+
+
+
+<style>
+body {
+text-align: justify; font-size: 16px}
+</style>
+<div id="introduction" class="section level1">
+<h1>1 Introduction</h1>
+<p>Tree-ring chronologies are standardised before they are related to
+climate. Standardisation removes age-related trends and, depending on
+the method, part of the low-frequency variability. Climate data are
+usually used as they are. A climate-growth correlation can then be
+inflated by trends that both series share, or weakened by low-frequency
+variability that remains in only one of them. To compare like with like,
+the four moving-window functions of dendroTools,
+<em>daily_response()</em>, <em>monthly_response()</em>,
+<em>daily_response_seascorr()</em> and
+<em>monthly_response_seascorr()</em>, can detrend the climate data with
+the <code>dc_*</code> arguments. Without these arguments, no detrending
+is applied and the results are those of earlier versions.</p>
+<p>Detrending is applied to the aggregated climate series of each moving
+window. For every window, the daily or monthly values are first
+aggregated (mean, sum, …) into one value per year, and this annual
+series is detrended before the correlation is calculated. Each window is
+therefore detrended on its own, just as a seasonal climate variable
+would be detrended before it is compared with a chronology.</p>
+</div>
+<div id="methods-and-arguments" class="section level1">
+<h1>2 Methods and arguments</h1>
+<table>
+<colgroup>
+<col width="33%" />
+<col width="33%" />
+<col width="33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th><code>dc_method</code></th>
+<th>Fitted curve</th>
+<th>Specific settings</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>&quot;none&quot;</code> (or <code>NULL</code>)</td>
+<td>none (default)</td>
+<td></td>
+</tr>
+<tr class="even">
+<td><code>&quot;SLD&quot;</code></td>
+<td>straight line (simple linear detrending), the historical dendroTools
+option</td>
+<td><code>dc_scale</code></td>
+</tr>
+<tr class="odd">
+<td><code>&quot;Spline&quot;</code></td>
+<td>cubic smoothing spline, <em>dplR::caps()</em></td>
+<td><code>dc_nyrs</code>, <code>dc_f</code></td>
+</tr>
+<tr class="even">
+<td><code>&quot;Mean&quot;</code></td>
+<td>horizontal line at the mean</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td><code>&quot;Ar&quot;</code></td>
+<td>autoregressive model (prewhitening), <em>stats::ar()</em></td>
+<td></td>
+</tr>
+<tr class="even">
+<td><code>&quot;Friedman&quot;</code></td>
+<td>Friedman’s super smoother, <em>stats::supsmu()</em></td>
+<td><code>dc_span</code>, <code>dc_bass</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><code>&quot;Spline&quot;</code>, <code>&quot;Mean&quot;</code>, <code>&quot;Ar&quot;</code> and
+<code>&quot;Friedman&quot;</code> follow <em>dplR::detrend()</em> and are fitted
+in the chronological order of the years given as row names. For
+<code>&quot;Spline&quot;</code>, <code>dc_nyrs</code> sets the stiffness of the
+spline (default: 0.67 times the number of years) and <code>dc_f</code>
+its frequency response at that wavelength (default 0.5). For
+<code>&quot;Friedman&quot;</code>, <code>dc_span</code> is <code>&quot;cv&quot;</code> (span
+chosen by cross-validation, the default) or a number between 0 and 1,
+and with <code>dc_span = &quot;cv&quot;</code> a larger <code>dc_bass</code> (0 to
+10) gives a smoother curve. <code>&quot;Ar&quot;</code> keeps the residuals of an
+autoregressive model whose order is chosen by AIC, so the first years of
+every window are missing.</li>
+<li><code>dc_difference</code> sets how the curve is removed: as a
+ratio, observed / curve (<code>FALSE</code>, the default, as in dplR),
+or as a difference, observed - curve (<code>TRUE</code>). Ratios suit
+non-negative variables, such as precipitation sums. For temperature in
+degrees Celsius and any other variable that can be negative, use
+<code>dc_difference = TRUE</code>. <code>&quot;SLD&quot;</code> always uses
+differences.</li>
+<li><code>dc_scale = TRUE</code> divides each detrended series by its
+standard deviation. The default (<code>NULL</code>) uses the convention
+of each method: <code>TRUE</code> for <code>&quot;SLD&quot;</code>, as in earlier
+versions, and <code>FALSE</code> for the dplR methods. Scaling does not
+change correlations, only the scale of <code>$optimized_return</code>
+and of the transfer function.</li>
+</ul>
+<p>The settings used are returned as <code>$detrending</code>. The
+detrended series of all windows are in <code>$aggregated_climate</code>
+(in the seascorr functions <code>$aggregated_climate_primary</code> and
+<code>$aggregated_climate_control</code>), and the detrended optimal
+window is in <code>$optimized_return</code>.</p>
+</div>
+<div id="examples" class="section level1">
+<h1>3 Examples</h1>
+<div id="monthly-temperatures-with-and-without-detrending" class="section level2">
+<h2>3.1 Monthly temperatures with and without detrending</h2>
+<p>The mean vessel area chronology (<em>data_MVA</em>) and the
+temperatures of Ljubljana both contain a positive trend over the period
+1940-2012, as their correlations with the year show:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">library</span>(dendroTools)</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="fu">data</span>(data_MVA)</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">data</span>(LJ_monthly_temperatures)</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>years <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">row.names</span>(data_MVA))</span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="co"># MVA</span></span>
+<span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="fu">cor</span>(data_MVA<span class="sc">$</span>MVA, years)</span>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="co">#&gt; [1] 0.4681797</span></span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="co"># mean temperature from March to November</span></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="fu">cor</span>(<span class="fu">rowMeans</span>(LJ_monthly_temperatures[<span class="fu">row.names</span>(data_MVA), <span class="dv">3</span><span class="sc">:</span><span class="dv">11</span>]), years)</span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="co">#&gt; [1] 0.6557047</span></span></code></pre></div>
+<p>The climate-growth relationship is calculated once without detrending
+and once with the temperatures detrended by a smoothing spline. Because
+temperatures can be negative, the spline is removed as a difference.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a>no_detrending <span class="ot">&lt;-</span> <span class="fu">monthly_response</span>(<span class="at">response =</span> data_MVA,</span>
+<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>                                  <span class="at">env_data =</span> LJ_monthly_temperatures,</span>
+<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>                                  <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a>                                  <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a>spline_detrending <span class="ot">&lt;-</span> <span class="fu">monthly_response</span>(<span class="at">response =</span> data_MVA,</span>
+<span id="cb2-7"><a href="#cb2-7" tabindex="-1"></a>                                      <span class="at">env_data =</span> LJ_monthly_temperatures,</span>
+<span id="cb2-8"><a href="#cb2-8" tabindex="-1"></a>                                      <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb2-9"><a href="#cb2-9" tabindex="-1"></a>                                      <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb2-10"><a href="#cb2-10" tabindex="-1"></a>                                      <span class="at">dc_method =</span> <span class="st">&quot;Spline&quot;</span>,</span>
+<span id="cb2-11"><a href="#cb2-11" tabindex="-1"></a>                                      <span class="at">dc_difference =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-12"><a href="#cb2-12" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" tabindex="-1"></a><span class="fu">str</span>(spline_detrending<span class="sc">$</span>detrending)</span>
+<span id="cb2-14"><a href="#cb2-14" tabindex="-1"></a><span class="co">#&gt; List of 7</span></span>
+<span id="cb2-15"><a href="#cb2-15" tabindex="-1"></a><span class="co">#&gt;  $ dc_method    : chr &quot;Spline&quot;</span></span>
+<span id="cb2-16"><a href="#cb2-16" tabindex="-1"></a><span class="co">#&gt;  $ dc_nyrs      : NULL</span></span>
+<span id="cb2-17"><a href="#cb2-17" tabindex="-1"></a><span class="co">#&gt;  $ dc_f         : num 0.5</span></span>
+<span id="cb2-18"><a href="#cb2-18" tabindex="-1"></a><span class="co">#&gt;  $ dc_difference: logi TRUE</span></span>
+<span id="cb2-19"><a href="#cb2-19" tabindex="-1"></a><span class="co">#&gt;  $ dc_span      : chr &quot;cv&quot;</span></span>
+<span id="cb2-20"><a href="#cb2-20" tabindex="-1"></a><span class="co">#&gt;  $ dc_bass      : num 0</span></span>
+<span id="cb2-21"><a href="#cb2-21" tabindex="-1"></a><span class="co">#&gt;  $ dc_scale     : logi FALSE</span></span></code></pre></div>
+<p>Figure 1 shows what the detrending does to one window, the mean
+temperature from March to November (in °C). The fitted curve is the
+difference between the aggregated and the detrended series.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a>window <span class="ot">&lt;-</span> <span class="st">&quot;3_11&quot;</span>  <span class="co"># from March (3) to November (11)</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a>observed <span class="ot">&lt;-</span> no_detrending<span class="sc">$</span>aggregated_climate[, window]</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a>detrended <span class="ot">&lt;-</span> spline_detrending<span class="sc">$</span>aggregated_climate[, window]</span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a>years <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">row.names</span>(no_detrending<span class="sc">$</span>aggregated_climate))</span>
+<span id="cb3-7"><a href="#cb3-7" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" tabindex="-1"></a>panels <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Mean temperature, March to November&quot;</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" tabindex="-1"></a>            <span class="st">&quot;Detrended: observed minus spline&quot;</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" tabindex="-1"></a>figure_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb3-12"><a href="#cb3-12" tabindex="-1"></a>  <span class="at">year =</span> <span class="fu">rep</span>(years, <span class="dv">3</span>),</span>
+<span id="cb3-13"><a href="#cb3-13" tabindex="-1"></a>  <span class="at">value =</span> <span class="fu">c</span>(observed, observed <span class="sc">-</span> detrended, detrended),</span>
+<span id="cb3-14"><a href="#cb3-14" tabindex="-1"></a>  <span class="at">series =</span> <span class="fu">rep</span>(<span class="fu">c</span>(<span class="st">&quot;observed&quot;</span>, <span class="st">&quot;spline&quot;</span>, <span class="st">&quot;observed&quot;</span>), <span class="at">each =</span> <span class="fu">length</span>(years)),</span>
+<span id="cb3-15"><a href="#cb3-15" tabindex="-1"></a>  <span class="at">panel =</span> <span class="fu">factor</span>(<span class="fu">rep</span>(panels[<span class="fu">c</span>(<span class="dv">1</span>, <span class="dv">1</span>, <span class="dv">2</span>)], <span class="at">each =</span> <span class="fu">length</span>(years)), <span class="at">levels =</span> panels)</span>
+<span id="cb3-16"><a href="#cb3-16" tabindex="-1"></a>)</span>
+<span id="cb3-17"><a href="#cb3-17" tabindex="-1"></a></span>
+<span id="cb3-18"><a href="#cb3-18" tabindex="-1"></a><span class="fu">ggplot</span>(figure_data, <span class="fu">aes</span>(<span class="at">x =</span> year, <span class="at">y =</span> value, <span class="at">colour =</span> series)) <span class="sc">+</span></span>
+<span id="cb3-19"><a href="#cb3-19" tabindex="-1"></a>  <span class="fu">geom_line</span>() <span class="sc">+</span></span>
+<span id="cb3-20"><a href="#cb3-20" tabindex="-1"></a>  <span class="fu">facet_wrap</span>(<span class="sc">~</span> panel, <span class="at">ncol =</span> <span class="dv">1</span>, <span class="at">scales =</span> <span class="st">&quot;free_y&quot;</span>) <span class="sc">+</span></span>
+<span id="cb3-21"><a href="#cb3-21" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="at">observed =</span> <span class="st">&quot;#2a78d6&quot;</span>, <span class="at">spline =</span> <span class="st">&quot;#eb6834&quot;</span>)) <span class="sc">+</span></span>
+<span id="cb3-22"><a href="#cb3-22" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">y =</span> <span class="cn">NULL</span>, <span class="at">colour =</span> <span class="cn">NULL</span>) <span class="sc">+</span></span>
+<span id="cb3-23"><a href="#cb3-23" tabindex="-1"></a>  <span class="fu">theme_bw</span>() <span class="sc">+</span></span>
+<span id="cb3-24"><a href="#cb3-24" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">legend.position =</span> <span class="st">&quot;bottom&quot;</span>, <span class="at">panel.grid.minor =</span> <span class="fu">element_blank</span>())</span></code></pre></div>
+<div class="figure" style="text-align: center">
+<img role="img" aria-label="Figure 1: Mean March to November temperature in Ljubljana with the fitted spline (top), and the detrended series used in the correlations (bottom)." src="data:image/png;base64,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" alt="Figure 1: Mean March to November temperature in Ljubljana with the fitted spline (top), and the detrended series used in the correlations (bottom)." />
+<p class="caption">
+Figure 1: Mean March to November temperature in Ljubljana with the
+fitted spline (top), and the detrended series used in the correlations
+(bottom).
+</p>
+</div>
+</div>
+<div id="comparing-the-methods" class="section level2">
+<h2>3.2 Comparing the methods</h2>
+<p>The same analysis is repeated for every method.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># the highest correlation and its window, taken from summary()</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>optimum <span class="ot">&lt;-</span> <span class="cf">function</span>(x) {</span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  s <span class="ot">&lt;-</span> <span class="fu">summary</span>(x)</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">r =</span> s<span class="sc">$</span>Value[s<span class="sc">$</span>Variable <span class="sc">==</span> <span class="st">&quot;maximal_calculated_metric&quot;</span>],</span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>             <span class="at">window =</span> s<span class="sc">$</span>Value[s<span class="sc">$</span>Variable <span class="sc">==</span> <span class="st">&quot;optimal_time_window&quot;</span>])</span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>}</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>methods <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;none&quot;</span>, <span class="st">&quot;SLD&quot;</span>, <span class="st">&quot;Spline&quot;</span>, <span class="st">&quot;Mean&quot;</span>, <span class="st">&quot;Ar&quot;</span>, <span class="st">&quot;Friedman&quot;</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>comparison <span class="ot">&lt;-</span> <span class="fu">do.call</span>(rbind, <span class="fu">lapply</span>(methods, <span class="cf">function</span>(m) {</span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">monthly_response</span>(<span class="at">response =</span> data_MVA,</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>                        <span class="at">env_data =</span> LJ_monthly_temperatures,</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>                        <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>                        <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>                        <span class="at">dc_method =</span> m, <span class="at">dc_difference =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>                        <span class="at">cor_na_use =</span> <span class="st">&quot;pairwise.complete.obs&quot;</span>)</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>  <span class="fu">data.frame</span>(<span class="at">dc_method =</span> m, <span class="fu">optimum</span>(x))</span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>}))</span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(comparison)</span></code></pre></div>
+<table>
+<thead>
+<tr class="header">
+<th align="left">dc_method</th>
+<th align="left">r</th>
+<th align="left">window</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">none</td>
+<td align="left">0.67</td>
+<td align="left">Mar - Nov</td>
+</tr>
+<tr class="even">
+<td align="left">SLD</td>
+<td align="left">0.522</td>
+<td align="left">Apr</td>
+</tr>
+<tr class="odd">
+<td align="left">Spline</td>
+<td align="left">0.378</td>
+<td align="left">Apr</td>
+</tr>
+<tr class="even">
+<td align="left">Mean</td>
+<td align="left">0.67</td>
+<td align="left">Mar - Nov</td>
+</tr>
+<tr class="odd">
+<td align="left">Ar</td>
+<td align="left">0.569</td>
+<td align="left">Mar - Apr</td>
+</tr>
+<tr class="even">
+<td align="left">Friedman</td>
+<td align="left">0.359</td>
+<td align="left">Apr</td>
+</tr>
+</tbody>
+</table>
+<p>Without detrending, the highest correlation belongs to a long window
+from March to November. <code>&quot;Mean&quot;</code> gives the same result,
+because subtracting the mean of each window does not change
+correlations. All other methods remove most of the low-frequency
+variability, which moves the optimum to a short spring window and lowers
+the correlation. This suggests that much of the correlation of the long
+window came from the trends that both series share. Figure 2 shows all
+windows without (a) and with spline detrending (b).</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a>heatmap_a <span class="ot">&lt;-</span> <span class="fu">plot</span>(no_detrending, <span class="at">type =</span> <span class="dv">2</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;a) No detrending&quot;</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>heatmap_b <span class="ot">&lt;-</span> <span class="fu">plot</span>(spline_detrending, <span class="at">type =</span> <span class="dv">2</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">&quot;b) Spline detrending&quot;</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a><span class="co"># the two heatmaps side by side</span></span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>grid<span class="sc">::</span><span class="fu">grid.newpage</span>()</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>grid<span class="sc">::</span><span class="fu">pushViewport</span>(grid<span class="sc">::</span><span class="fu">viewport</span>(<span class="at">layout =</span> grid<span class="sc">::</span><span class="fu">grid.layout</span>(<span class="dv">1</span>, <span class="dv">2</span>)))</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a><span class="fu">print</span>(heatmap_a, <span class="at">vp =</span> grid<span class="sc">::</span><span class="fu">viewport</span>(<span class="at">layout.pos.row =</span> <span class="dv">1</span>, <span class="at">layout.pos.col =</span> <span class="dv">1</span>))</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a><span class="fu">print</span>(heatmap_b, <span class="at">vp =</span> grid<span class="sc">::</span><span class="fu">viewport</span>(<span class="at">layout.pos.row =</span> <span class="dv">1</span>, <span class="at">layout.pos.col =</span> <span class="dv">2</span>))</span></code></pre></div>
+<div class="figure" style="text-align: center">
+<img role="img" aria-label="Figure 2: Correlations between MVA and monthly temperatures for all windows, (a) without detrending and (b) after spline detrending. Each panel has its own colour scale." src="data:image/png;base64,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" alt="Figure 2: Correlations between MVA and monthly temperatures for all windows, (a) without detrending and (b) after spline detrending. Each panel has its own colour scale." />
+<p class="caption">
+Figure 2: Correlations between MVA and monthly temperatures for all
+windows, (a) without detrending and (b) after spline detrending. Each
+panel has its own colour scale.
+</p>
+</div>
+</div>
+<div id="ratios-for-precipitation" class="section level2">
+<h2>3.3 Ratios for precipitation</h2>
+<p>Precipitation sums are non-negative, so the default ratio detrending
+can be used.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">data</span>(LJ_monthly_precipitation)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>precipitation_spline <span class="ot">&lt;-</span> <span class="fu">monthly_response</span>(<span class="at">response =</span> data_MVA,</span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>                                         <span class="at">env_data =</span> LJ_monthly_precipitation,</span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>                                         <span class="at">tidy_env_data =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>                                         <span class="at">aggregate_function =</span> <span class="st">&quot;sum&quot;</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>                                         <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>                                         <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>                                         <span class="at">dc_method =</span> <span class="st">&quot;Spline&quot;</span>)</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a><span class="fu">optimum</span>(precipitation_spline)</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a><span class="co">#&gt;        r    window</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a><span class="co">#&gt; 1 -0.283 Jan - Jun</span></span></code></pre></div>
+<p>A window whose sum is zero in some year, for example a completely dry
+window, cannot be detrended by ratios and is returned as
+<code>NA</code>. Ratio detrending of data with negative values stops
+with an error:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">monthly_response</span>(<span class="at">response =</span> data_MVA, <span class="at">env_data =</span> LJ_monthly_temperatures,</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>                 <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>, <span class="at">dc_method =</span> <span class="st">&quot;Spline&quot;</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="co">#&gt; Error:</span></span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a><span class="co">#&gt; ! dc_difference = FALSE performs ratio detrending, which is only defined for positive climate data, but env_data contains negative values (minimum: -8.9). Set dc_difference = TRUE to detrend by differences, which is the appropriate choice for temperature and for any variable that can be negative.</span></span></code></pre></div>
+</div>
+<div id="prewhitening-daily-data" class="section level2">
+<h2>3.4 Prewhitening daily data</h2>
+<p>Prewhitening is usually applied to both series: the residual
+tree-ring chronology and the climate data. Here the residual chronology
+is calculated with <em>dplR::detrend.series()</em>. Like the prewhitened
+climate windows, it starts with missing values.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="fu">data</span>(LJ_daily_temperatures)</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a>mva_residual <span class="ot">&lt;-</span> data_MVA</span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a>mva_residual<span class="sc">$</span>MVA <span class="ot">&lt;-</span> dplR<span class="sc">::</span><span class="fu">detrend.series</span>(data_MVA<span class="sc">$</span>MVA, <span class="at">method =</span> <span class="st">&quot;Ar&quot;</span>,</span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a>                                         <span class="at">make.plot =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a>daily_prewhitened <span class="ot">&lt;-</span> <span class="fu">daily_response</span>(<span class="at">response =</span> mva_residual,</span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a>                                    <span class="at">env_data =</span> LJ_daily_temperatures,</span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a>                                    <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a>                                    <span class="at">fixed_width =</span> <span class="dv">60</span>,</span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a>                                    <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a>                                    <span class="at">dc_method =</span> <span class="st">&quot;Ar&quot;</span>,</span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a>                                    <span class="at">dc_difference =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a>                                    <span class="at">cor_na_use =</span> <span class="st">&quot;pairwise.complete.obs&quot;</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a></span>
+<span id="cb8-16"><a href="#cb8-16" tabindex="-1"></a>daily_not_prewhitened <span class="ot">&lt;-</span> <span class="fu">daily_response</span>(<span class="at">response =</span> data_MVA,</span>
+<span id="cb8-17"><a href="#cb8-17" tabindex="-1"></a>                                        <span class="at">env_data =</span> LJ_daily_temperatures,</span>
+<span id="cb8-18"><a href="#cb8-18" tabindex="-1"></a>                                        <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb8-19"><a href="#cb8-19" tabindex="-1"></a>                                        <span class="at">fixed_width =</span> <span class="dv">60</span>,</span>
+<span id="cb8-20"><a href="#cb8-20" tabindex="-1"></a>                                        <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb8-21"><a href="#cb8-21" tabindex="-1"></a></span>
+<span id="cb8-22"><a href="#cb8-22" tabindex="-1"></a><span class="fu">rbind</span>(<span class="at">not_prewhitened =</span> <span class="fu">optimum</span>(daily_not_prewhitened),</span>
+<span id="cb8-23"><a href="#cb8-23" tabindex="-1"></a>      <span class="at">prewhitened =</span> <span class="fu">optimum</span>(daily_prewhitened))</span>
+<span id="cb8-24"><a href="#cb8-24" tabindex="-1"></a><span class="co">#&gt;                     r          window</span></span>
+<span id="cb8-25"><a href="#cb8-25" tabindex="-1"></a><span class="co">#&gt; not_prewhitened 0.767 Mar 14 - May 12</span></span>
+<span id="cb8-26"><a href="#cb8-26" tabindex="-1"></a><span class="co">#&gt; prewhitened     0.659 Mar 11 - May 09</span></span></code></pre></div>
+<p>After prewhitening, the optimal window shifts by only a few days and
+the correlation remains high, so the relationship is not a result of
+autocorrelation in the two series.</p>
+</div>
+<div id="different-settings-for-the-control-variable" class="section level2">
+<h2>3.5 Different settings for the control variable</h2>
+<p>In the seascorr functions, the primary and the control windows are
+detrended with the same settings by default.
+<code>dc_env_data_control</code> replaces any of these settings for the
+control windows. Here the temperatures (primary) are detrended by
+differences and the precipitation sums (control) by ratios.
+<code>dc_env_data_control = list(dc_method = &quot;none&quot;)</code> would leave
+the control windows as they are.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>seascorr_detrended <span class="ot">&lt;-</span> <span class="fu">monthly_response_seascorr</span>(</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a>  <span class="at">response =</span> data_MVA,</span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a>  <span class="at">env_data_primary =</span> LJ_monthly_temperatures,</span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a>  <span class="at">env_data_control =</span> LJ_monthly_precipitation,</span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a>  <span class="at">tidy_env_data_primary =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a>  <span class="at">tidy_env_data_control =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a>  <span class="at">row_names_subset =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a>  <span class="at">remove_insignificant =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a>  <span class="at">dc_method =</span> <span class="st">&quot;Spline&quot;</span>, <span class="at">dc_difference =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a>  <span class="at">dc_env_data_control =</span> <span class="fu">list</span>(<span class="at">dc_difference =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a>seascorr_detrended<span class="sc">$</span>detrending<span class="sc">$</span>primary<span class="sc">$</span>dc_difference</span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt; [1] TRUE</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a>seascorr_detrended<span class="sc">$</span>detrending<span class="sc">$</span>control<span class="sc">$</span>dc_difference</span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt; [1] FALSE</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="fu">optimum</span>(seascorr_detrended)</span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co">#&gt;       r window</span></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt; 1 0.352    Apr</span></span></code></pre></div>
+</div>
+</div>
+<div id="practical-notes" class="section level1">
+<h1>4 Practical notes</h1>
+<ul>
+<li>Ols et al. (2023) found that fewer than 20 % of the dendroecological
+studies published in Dendrochronologia from 2018 to 2021 detrended the
+climate data, although detrending the climate data increased
+climate-growth correlations on average in their North American tree-ring
+network. They recommend detrending climate and tree-ring data in the
+same way. For a chronology standardised with a 32-year spline, this
+means <code>dc_method = &quot;Spline&quot;</code> and <code>dc_nyrs = 32</code>
+(with <code>dc_difference = TRUE</code> for temperature), and for a
+residual chronology <code>dc_method = &quot;Ar&quot;</code>.</li>
+<li>Missing values are left out when the curve is fitted and put back
+afterwards. If a whole window is missing in some of the analysed years,
+a warning names those years.</li>
+<li>Detrending is applied after the aggregation, so
+<code>aggregate_function</code> works as before.</li>
+</ul>
+</div>
+<div id="references" class="section level1">
+<h1>References</h1>
+<p>Ols, C., Klesse, S., Girardin, M.P., Evans, M.E.K., DeRose, R.J.,
+Trouet, V., 2023. Detrending climate data prior to climate–growth
+analyses in dendroecology: A common best practice? Dendrochronologia 79,
+126094. <a href="https://doi.org/10.1016/j.dendro.2023.126094" class="uri">https://doi.org/10.1016/j.dendro.2023.126094</a></p>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
